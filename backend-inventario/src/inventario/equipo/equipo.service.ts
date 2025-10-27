@@ -1,0 +1,117 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Between, FindOptionsWhere, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { Equipo, EquipoEstado, EquipoTipo } from './entities/equipo.entity';
+import { CreateEquipoDto } from './dto/create-equipo.dto';
+import { UpdateEquipoDto } from './dto/update-equipo.dto';
+import { QueryEquipoDto } from './dto/query-equipo.dto';
+
+@Injectable()
+export class EquipoService {
+  constructor(@InjectRepository(Equipo) private repo: Repository<Equipo>) {}
+
+  async create(dto: CreateEquipoDto) {
+    const equipo = this.repo.create({
+      codigoInterno: dto.codigoInterno,
+      tipo: dto.tipo,
+      fechaCompra: dto.fechaCompra,
+      garantia: dto.garantia,
+      estado: dto.estado ?? EquipoEstado.ACTIVO,
+      proveedor: dto.proveedorId ? ({ id: dto.proveedorId } as any) : undefined,
+      area: dto.areaId ? ({ id: dto.areaId } as any) : undefined,
+      empleadoAsignado: dto.empleadoAsignadoId ? ({ id: dto.empleadoAsignadoId } as any) : undefined,
+    });
+    return this.repo.save(equipo);
+  }
+
+  async findAll(q: QueryEquipoDto) {
+    const { page = 1, limit = 10, search, tipo, estado, areaId, proveedorId, empleadoAsignadoId, garantiaAntesDe } = q;
+
+    const where: FindOptionsWhere<Equipo> = {};
+    if (search) where.codigoInterno = ILike(`%${search}%`);
+    if (tipo) where.tipo = tipo;
+    if (estado) where.estado = estado;
+    if (areaId) where.area = { id: areaId } as any;
+    if (proveedorId) where.proveedor = { id: proveedorId } as any;
+    if (empleadoAsignadoId) where.empleadoAsignado = { id: empleadoAsignadoId } as any;
+    if (garantiaAntesDe) where.garantia = LessThanOrEqual(garantiaAntesDe);
+
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      relations: { area: true, proveedor: true, empleadoAsignado: true },
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { codigoInterno: 'ASC' },
+    });
+
+    return { items, total, page, limit };
+  }
+
+  async findOne(id: string) {
+    const equipo = await this.repo.findOne({
+      where: { id },
+      relations: { area: true, proveedor: true, empleadoAsignado: true },
+    });
+    if (!equipo) throw new NotFoundException('Equipo no encontrado');
+    return equipo;
+  }
+
+  async update(id: string, dto: UpdateEquipoDto) {
+    const equipo = await this.findOne(id);
+
+    if (dto.proveedorId !== undefined) {
+      (equipo as any).proveedor = dto.proveedorId ? ({ id: dto.proveedorId } as any) : null;
+    }
+    if (dto.areaId !== undefined) {
+      (equipo as any).area = dto.areaId ? ({ id: dto.areaId } as any) : null;
+    }
+    if (dto.empleadoAsignadoId !== undefined) {
+      (equipo as any).empleadoAsignado = dto.empleadoAsignadoId ? ({ id: dto.empleadoAsignadoId } as any) : null;
+    }
+
+    if (dto.codigoInterno !== undefined) equipo.codigoInterno = dto.codigoInterno;
+    if (dto.tipo !== undefined) equipo.tipo = dto.tipo;
+    if (dto.fechaCompra !== undefined) equipo.fechaCompra = dto.fechaCompra;
+    if (dto.garantia !== undefined) equipo.garantia = dto.garantia;
+    if (dto.estado !== undefined) equipo.estado = dto.estado;
+
+    return this.repo.save(equipo);
+  }
+
+  async remove(id: string) {
+    const equipo = await this.findOne(id);
+    await this.repo.remove(equipo);
+    return { deleted: true };
+  }
+
+  /**
+   * Equipos con garantía vencida o próxima a vencer en N días.
+   * @param dias Por defecto 30. Incluye vencidas (garantia <= hoy) y próximas (garantia <= hoy + N).
+   */
+  async proximasGarantias(dias = 30) {
+    const hoy = new Date();
+    const limite = new Date(hoy);
+    limite.setDate(hoy.getDate() + Number(dias));
+
+    // YYYY-MM-DD
+    const toYmd = (d: Date) => d.toISOString().slice(0, 10);
+
+    const [items, total] = await this.repo.findAndCount({
+      where: {
+        garantia: Between(toYmd(new Date(0)), toYmd(limite)), // cualquier fecha <= limite
+      },
+      relations: { area: true, proveedor: true, empleadoAsignado: true },
+      order: { garantia: 'ASC', codigoInterno: 'ASC' },
+    });
+
+    const vencidas = items.filter(e => e.garantia && e.garantia <= toYmd(hoy));
+    const proximas = items.filter(e => e.garantia && e.garantia > toYmd(hoy));
+
+    return {
+      total,
+      vencidas: { total: vencidas.length, items: vencidas },
+      proximas: { total: proximas.length, items: proximas },
+      rango: { desde: '1970-01-01', hasta: toYmd(limite) },
+    };
+  }
+}
