@@ -1,25 +1,27 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-function App() {
+import AppLayout from './layout/AppLayout';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import EquiposListPage from './pages/equipos/EquiposListPage';
+import MantenimientosListPage from './pages/mantenimientos/MantenimientosListPage';
+import AlertasListPage from './pages/alertas/AlertasListPage';
+
+const queryClient = new QueryClient();
+
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/equipos" element={<EquiposListPage />} />
+            <Route path="/mantenimientos" element={<MantenimientosListPage />} />
+            <Route path="/alertas" element={<AlertasListPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
-
-export default App;

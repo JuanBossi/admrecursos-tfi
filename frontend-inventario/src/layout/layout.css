@@ -1,0 +1,13 @@
+.app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+.sidebar { background:#0f172a; color:#fff; padding:1rem; }
+.sidebar nav a { display:block; color:#cbd5e1; text-decoration:none; margin:.5rem 0; }
+.sidebar nav a.active { color:#fff; font-weight:600; }
+.content { display:flex; flex-direction:column; }
+.topbar { border-bottom:1px solid #e5e7eb; padding: .75rem 1rem; }
+main { padding: 1rem; }
+.card { border:1px solid #e5e7eb; border-radius: .5rem; padding:1rem; background:#fff; }
+.grid { display:grid; gap:1rem; }
+.grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.table { width:100%; border-collapse: collapse; }
+.table th, .table td { border-bottom:1px solid #e5e7eb; padding:.5rem .75rem; text-align:left; }
+.badge { display:inline-block; padding:.2rem .5rem; border-radius:.5rem; background:#e5e7eb; }
