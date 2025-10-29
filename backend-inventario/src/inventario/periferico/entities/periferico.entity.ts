@@ -31,9 +31,8 @@ export class Periferico {
   @Column({ type: 'enum', enum: PerifericoEstado, default: PerifericoEstado.ACTIVO })
   estado: PerifericoEstado;
 
-  // guardamos JSON como string corto (coincide con tu diseño)
   @Column({ type: 'varchar', length: 250, nullable: true })
-  especificaciones?: string; // ej: {"capacidad_gb":16,"tecnologia":"DDR4","frecuencia_mhz":3200}
+  especificaciones?: string; 
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

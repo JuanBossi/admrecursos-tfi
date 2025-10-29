@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useAlertasList, useAlertaCreate, useAlertaUpdate, useAlertaDelete } from '../../core/hooks/useAlertas';
-import { useEquiposList } from '../../core/hooks/useEquipos';
+import { useTecnicosList, useTecnicoCreate, useTecnicoUpdate, useTecnicoDelete } from '../../core/hooks/useTecnicos';
 
-export default function AlertasListPage() {
+export default function TecnicosListPage() {
   const [filtros, setFiltros] = useState({
     search: '',
     page: 1,
@@ -12,20 +11,21 @@ export default function AlertasListPage() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState(null);
   const [formulario, setFormulario] = useState({
-    mensaje: '',
-    equipoId: ''
+    nombre: '',
+    apellido: '',
+    dni: '',
+    contacto: '',
+    tipoContrato: 'INTERNO'
   });
 
   // Hooks para datos
-  const { data: alertasData, isLoading, error } = useAlertasList(filtros);
-  const { data: equiposData } = useEquiposList({ limit: 200 });
-  const createMutation = useAlertaCreate();
-  const updateMutation = useAlertaUpdate();
-  const deleteMutation = useAlertaDelete();
+  const { data: tecnicosData, isLoading, error } = useTecnicosList(filtros);
+  const createMutation = useTecnicoCreate();
+  const updateMutation = useTecnicoUpdate();
+  const deleteMutation = useTecnicoDelete();
 
-  const alertas = alertasData?.items || [];
-  const equipos = equiposData?.items || [];
-  const total = alertasData?.total || 0;
+  const tecnicos = tecnicosData?.items || [];
+  const total = tecnicosData?.total || 0;
   const totalPages = Math.ceil(total / filtros.limit);
 
   // Manejo de filtros
@@ -56,29 +56,35 @@ export default function AlertasListPage() {
       setMostrarModal(false);
       setEditando(null);
       setFormulario({
-        mensaje: '',
-        equipoId: ''
+        nombre: '',
+        apellido: '',
+        dni: '',
+        contacto: '',
+        tipoContrato: 'INTERNO'
       });
     } catch (error) {
-      console.error('Error al guardar alerta:', error);
+      console.error('Error al guardar técnico:', error);
     }
   };
 
-  const handleEdit = (alerta) => {
-    setEditando(alerta);
+  const handleEdit = (tecnico) => {
+    setEditando(tecnico);
     setFormulario({
-      mensaje: alerta.mensaje,
-      equipoId: alerta.equipo?.id || ''
+      nombre: tecnico.nombre,
+      apellido: tecnico.apellido,
+      dni: tecnico.dni,
+      contacto: tecnico.contacto || '',
+      tipoContrato: tecnico.tipoContrato
     });
     setMostrarModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta alerta?')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este técnico?')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (error) {
-        console.error('Error al eliminar alerta:', error);
+        console.error('Error al eliminar técnico:', error);
       }
     }
   };
@@ -94,7 +100,7 @@ export default function AlertasListPage() {
     return (
       <div className="card">
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p>Cargando alertas...</p>
+          <p>Cargando técnicos...</p>
         </div>
       </div>
     );
@@ -104,7 +110,7 @@ export default function AlertasListPage() {
     return (
       <div className="card">
         <div style={{ textAlign: 'center', padding: '2rem', color: '#dc2626' }}>
-          <p>Error al cargar las alertas: {error.message}</p>
+          <p>Error al cargar los técnicos: {error.message}</p>
         </div>
       </div>
     );
@@ -114,13 +120,16 @@ export default function AlertasListPage() {
     <div>
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Alertas</h1>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Técnicos</h1>
         <button
           onClick={() => {
             setEditando(null);
             setFormulario({
-              mensaje: '',
-              equipoId: ''
+              nombre: '',
+              apellido: '',
+              dni: '',
+              contacto: '',
+              tipoContrato: 'INTERNO'
             });
             setMostrarModal(true);
           }}
@@ -134,7 +143,7 @@ export default function AlertasListPage() {
             fontWeight: '500'
           }}
         >
-          + Agregar Alerta
+          + Agregar Técnico
         </button>
       </div>
 
@@ -150,7 +159,7 @@ export default function AlertasListPage() {
               type="text"
               value={filtros.search}
               onChange={(e) => handleFiltroChange('search', e.target.value)}
-              placeholder="Mensaje, equipo..."
+              placeholder="Nombre, apellido, DNI..."
               style={{
                 width: '100%',
                 padding: '0.5rem',
@@ -185,17 +194,17 @@ export default function AlertasListPage() {
         </div>
       </div>
 
-      {/* Tabla de alertas */}
+      {/* Tabla de técnicos */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
-            Alertas ({total})
+            Técnicos ({total})
           </h3>
         </div>
 
-        {alertas.length === 0 ? (
+        {tecnicos.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            <p>No se encontraron alertas con los filtros aplicados</p>
+            <p>No se encontraron técnicos con los filtros aplicados</p>
           </div>
         ) : (
           <>
@@ -203,35 +212,37 @@ export default function AlertasListPage() {
               <table className="table">
                 <thead>
                   <tr style={{ background: '#f9fafb' }}>
-                    <th>Mensaje</th>
-                    <th>Equipo</th>
-                    <th>Fecha de Creación</th>
+                    <th>Nombre Completo</th>
+                    <th>DNI</th>
+                    <th>Contacto</th>
+                    <th>Tipo de Contrato</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {alertas.map(alerta => (
-                    <tr key={alerta.id}>
+                  {tecnicos.map(tecnico => (
+                    <tr key={tecnico.id}>
                       <td>
-                        <div style={{ fontWeight: '500' }}>{alerta.mensaje}</div>
+                        <div>
+                          <div style={{ fontWeight: '500' }}>{tecnico.nombre} {tecnico.apellido}</div>
+                        </div>
                       </td>
+                      <td>{tecnico.dni}</td>
+                      <td>{tecnico.contacto || '-'}</td>
                       <td>
-                        {alerta.equipo ? (
-                          <div>
-                            <div style={{ fontWeight: '500' }}>{alerta.equipo.codigoInterno}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                              {alerta.equipo.tipo}
-                            </div>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#6b7280' }}>Sin equipo</span>
-                        )}
+                        <span className={`badge ${
+                          tecnico.tipoContrato === 'INTERNO' ? 'badge-info' : 'badge-warning'
+                        }`} style={{
+                          background: tecnico.tipoContrato === 'INTERNO' ? '#dbeafe' : '#fef3c7',
+                          color: tecnico.tipoContrato === 'INTERNO' ? '#1e40af' : '#92400e'
+                        }}>
+                          {tecnico.tipoContrato}
+                        </span>
                       </td>
-                      <td>{new Date(alerta.createdAt).toLocaleDateString()}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
-                            onClick={() => handleEdit(alerta)}
+                            onClick={() => handleEdit(tecnico)}
                             style={{
                               background: '#f3f4f6',
                               border: '1px solid #d1d5db',
@@ -244,7 +255,7 @@ export default function AlertasListPage() {
                             Editar
                           </button>
                           <button
-                            onClick={() => handleDelete(alerta.id)}
+                            onClick={() => handleDelete(tecnico.id)}
                             style={{
                               background: '#fee2e2',
                               border: '1px solid #fecaca',
@@ -305,7 +316,7 @@ export default function AlertasListPage() {
         )}
       </div>
 
-      {/* Modal para agregar/editar alerta */}
+      {/* Modal para agregar/editar técnico */}
       {mostrarModal && (
         <div style={{
           position: 'fixed',
@@ -330,7 +341,7 @@ export default function AlertasListPage() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                {editando ? 'Editar Alerta' : 'Agregar Nueva Alerta'}
+                {editando ? 'Editar Técnico' : 'Agregar Nuevo Técnico'}
               </h2>
               <button
                 onClick={() => {
@@ -350,35 +361,89 @@ export default function AlertasListPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Mensaje *
+                    Nombre *
                   </label>
-                  <textarea
-                    value={formulario.mensaje}
-                    onChange={(e) => handleInputChange('mensaje', e.target.value)}
+                  <input
+                    type="text"
+                    value={formulario.nombre}
+                    onChange={(e) => handleInputChange('nombre', e.target.value)}
                     required
-                    rows={3}
-                    placeholder="Descripción de la alerta..."
                     style={{
                       width: '100%',
                       padding: '0.5rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '0.375rem',
-                      fontSize: '0.875rem',
-                      resize: 'vertical'
+                      fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Equipo
+                    Apellido *
+                  </label>
+                  <input
+                    type="text"
+                    value={formulario.apellido}
+                    onChange={(e) => handleInputChange('apellido', e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    DNI *
+                  </label>
+                  <input
+                    type="text"
+                    value={formulario.dni}
+                    onChange={(e) => handleInputChange('dni', e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    Contacto
+                  </label>
+                  <input
+                    type="email"
+                    value={formulario.contacto}
+                    onChange={(e) => handleInputChange('contacto', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    Tipo de Contrato
                   </label>
                   <select
-                    value={formulario.equipoId}
-                    onChange={(e) => handleInputChange('equipoId', e.target.value)}
+                    value={formulario.tipoContrato}
+                    onChange={(e) => handleInputChange('tipoContrato', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '0.5rem',
@@ -387,12 +452,8 @@ export default function AlertasListPage() {
                       fontSize: '0.875rem'
                     }}
                   >
-                    <option value="">Sin equipo específico</option>
-                    {equipos.map(equipo => (
-                      <option key={equipo.id} value={equipo.id}>
-                        {equipo.codigoInterno} - {equipo.tipo}
-                      </option>
-                    ))}
+                    <option value="INTERNO">Interno</option>
+                    <option value="EXTERNO">Externo</option>
                   </select>
                 </div>
               </div>
