@@ -6,19 +6,12 @@ import { CreatePerifericoDto } from './dto/create-periferico.dto';
 import { UpdatePerifericoDto } from './dto/update-periferico.dto';
 import { QueryPerifericoDto } from './dto/query-periferico.dto';
 
-const isJsonString = (s?: string) => {
-  if (!s) return true;
-  try { JSON.parse(s); return true; } catch { return false; }
-};
 
 @Injectable()
 export class PerifericoService {
   constructor(@InjectRepository(Periferico) private repo: Repository<Periferico>) {}
 
   async create(dto: CreatePerifericoDto) {
-    if (!isJsonString(dto.especificaciones)) {
-      throw new BadRequestException('El campo especificaciones debe ser JSON válido en formato string');
-    }
 
     const p = this.repo.create({
       tipo: { id: dto.tipoId } as any,
@@ -59,10 +52,6 @@ export class PerifericoService {
   }
 
   async update(id: string, dto: UpdatePerifericoDto) {
-    if (dto.especificaciones !== undefined && !isJsonString(dto.especificaciones)) {
-      throw new BadRequestException('El campo especificaciones debe ser JSON válido en formato string');
-    }
-
     const p = await this.findOne(id);
 
     if (dto.tipoId !== undefined) (p as any).tipo = dto.tipoId ? ({ id: dto.tipoId } as any) : null;

@@ -10,7 +10,9 @@ export default function AppLayout() {
           <NavLink to="/" end>Dashboard</NavLink>
           <NavLink to="/equipos">Equipos</NavLink>
           <NavLink to="/mantenimientos">Mantenimientos</NavLink>
+          <NavLink to="/perifericos">Periféricos</NavLink>
           <NavLink to="/alertas">Alertas</NavLink>
+          <NavLink to="/tecnicos">Técnicos</NavLink>
         </nav>
       </aside>
       <div className="content">

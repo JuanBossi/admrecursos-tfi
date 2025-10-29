@@ -17,7 +17,6 @@ export class CreatePerifericoDto {
   @IsOptional() @IsEnum(PerifericoEstado)
   estado?: PerifericoEstado;
 
-  // se espera string JSON válido (validamos formato básico)
-  @IsOptional() @IsString() @MaxLength(250)
-  especificaciones?: string;
+   @IsOptional() @IsString() @MaxLength(250)
+  especificaciones?: string; // ej: "DDR4 3200MHz 16GB CL16
 }
