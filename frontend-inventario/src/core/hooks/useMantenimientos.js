@@ -32,7 +32,6 @@ function toArray(x) {
   return [];
 }
 
-// ⬇️ Pegar al final de src/core/hooks/useMantenimientos.js (dejá lo existente)
 export function useMantenimientosProximos({ dias = 30 } = {}) {
   const q = useQuery({
     queryKey: ['mantenimientos-proximos', dias],

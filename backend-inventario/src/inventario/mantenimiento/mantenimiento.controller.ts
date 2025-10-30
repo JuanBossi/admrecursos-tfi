@@ -18,6 +18,12 @@ export class MantenimientoController {
     return this.service.findAll(q);
   }
 
+  @Get('proximos')
+  async proximos(@Query('dias') dias = 30) {
+    const d = Number(dias) || 30;
+    return this.service.proximos(d);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

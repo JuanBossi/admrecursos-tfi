@@ -128,13 +128,7 @@ export class EquipoService {
     diasRestantes: number;
   }>();
   
-  console.log('[GET /equipos/garantias]', {
-    dias: d,
-    db: meta?.[0]?.db,
-    today: meta?.[0]?.today,
-    now: meta?.[0]?.now,
-    count: rows.length,
-  });
+  
 
   return { ok: true, data: rows };
 }

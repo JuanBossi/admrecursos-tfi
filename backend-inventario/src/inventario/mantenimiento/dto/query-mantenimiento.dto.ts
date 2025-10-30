@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { MantenimientoEstado } from '../entities/mantenimiento.entity';
+import { EstadoMantenimiento } from './update-mantenimiento.dto';
 
 export class QueryMantenimientoDto {
   @IsOptional()
@@ -16,6 +16,6 @@ export class QueryMantenimientoDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(MantenimientoEstado)
-  estado?: MantenimientoEstado;
+  @IsEnum(EstadoMantenimiento)
+  estado?: EstadoMantenimiento;
 }

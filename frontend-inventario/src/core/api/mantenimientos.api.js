@@ -10,16 +10,27 @@ export async function fetchMantenimientos(q = {}) {
   const url = `${BASE_URL}/mantenimientos?${params.toString()}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+  // Backend envuelve como { ok: true, data: { items, total, page, limit } }
   const response = await res.json();
-  if (response.ok && response.data) return response.data;
+  if (response?.ok) return response.data;
   throw new Error('Respuesta del servidor no válida');
 }
 
 export async function createMantenimiento(payload) {
+  // Alinear nombres de campos con CreateMantenimientoDto
+  const body = {
+    equipo_id: payload.equipo_id ?? Number(payload.equipoId),
+    tipo: payload.tipo, // 'Preventivo' | 'Correctivo'
+    descripcion: payload.descripcion,
+    fecha_programada: payload.fecha_programada ?? payload.fecha,
+    ...(payload.tecnico_id != null ? { tecnico_id: payload.tecnico_id } : {}),
+    ...(payload.created_by != null ? { created_by: payload.created_by } : {}),
+  };
+
   const res = await fetch(`${BASE_URL}/mantenimientos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
   const response = await res.json();
@@ -28,27 +39,10 @@ export async function createMantenimiento(payload) {
 }
 
 export async function fetchMantenimientosProximos({ dias = 30 } = {}) {
-  // Intento 1: endpoint dedicado /mantenimientos/proximos?dias=...
-  try {
-    const url1 = `${BASE_URL}/mantenimientos/proximos?dias=${encodeURIComponent(dias)}`;
-    const res1 = await fetch(url1);
-    if (res1.ok) {
-      const json1 = await res1.json();
-      if (json1?.data) return json1.data;
-    }
-  } catch (_) {}
-
-  // Intento 2: usar el listado general con params comunes
-  const params = new URLSearchParams();
-  params.set('estado', 'PROGRAMADO');
-  params.set('dias', String(dias));          // si tu API usa "dias"
-  params.set('hastaDias', String(dias));     // o "hastaDias" (quedará duplicado si tu backend ignora uno)
-  const url2 = `${BASE_URL}/mantenimientos?${params.toString()}`;
-
-  const res2 = await fetch(url2);
-  if (!res2.ok) throw new Error(`Error ${res2.status}: ${res2.statusText}`);
-  const json2 = await res2.json();
-  if (json2?.ok && json2?.data) return json2.data;
-
+  const url = `${BASE_URL}/mantenimientos/proximos?dias=${encodeURIComponent(dias)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+  const json = await res.json();
+  if (json?.ok && Array.isArray(json.data)) return json.data;
   throw new Error('Respuesta del servidor no válida para mantenimientos próximos');
 }

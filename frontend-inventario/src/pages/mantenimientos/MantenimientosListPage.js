@@ -7,7 +7,6 @@ export default function MantenimientosListPage() {
   const [equipoId, setEquipoId] = useState('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ equipoId: '', fecha: '', tipo: 'PREVENTIVO', descripcion: '' });
-
   const { data, isLoading, error } = useMantenimientosList({ page, limit: 10, equipoId: equipoId || undefined });
   const { data: equipos } = useEquiposForSelect();
   const createMut = useMantenimientoCreate();
@@ -16,15 +15,15 @@ export default function MantenimientosListPage() {
     e.preventDefault();
     try {
       await createMut.mutateAsync({
-        equipoId: String(form.equipoId),
-        fecha: form.fecha,
-        tipo: form.tipo,
-        descripcion: form.descripcion || undefined,
+        equipo_id: Number(form.equipoId),
+        fecha_programada: form.fecha,
+        tipo: form.tipo === 'PREVENTIVO' ? 'Preventivo' : 'Correctivo',
+        descripcion: form.descripcion,
       });
       setOpen(false);
       setForm({ equipoId: '', fecha: '', tipo: 'PREVENTIVO', descripcion: '' });
     } catch (err) {
-      // noop; errores se verán en consola o en red
+      // errores visibles en red/consola
     }
   };
 
@@ -63,7 +62,7 @@ export default function MantenimientosListPage() {
                   <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m.id}</td>
                   <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m?.equipo?.codigoInterno || '-'}</td>
                   <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m.tipo}</td>
-                  <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m.fecha ? new Date(m.fecha).toLocaleDateString() : '-'}</td>
+                  <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m.fecha_programada ? new Date(m.fecha_programada).toLocaleDateString() : '-'}</td>
                   <td className="border-b border-slate-100 px-4 py-3 align-top text-slate-700">{m.descripcion || '-'}</td>
                 </tr>
               ))}
@@ -97,7 +96,7 @@ export default function MantenimientosListPage() {
               </label>
               <label className="grid gap-1 text-sm">
                 <span className="font-medium text-slate-700">Descripción</span>
-                <textarea rows={3} value={form.descripcion} onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))} className="resize-y rounded-lg border border-slate-300 px-3 py-2 shadow-sm" />
+                <textarea required rows={3} value={form.descripcion} onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))} className="resize-y rounded-lg border border-slate-300 px-3 py-2 shadow-sm" />
               </label>
               <div className="mt-2 flex items-center justify-end gap-2">
                 <button type="button" onClick={() => setOpen(false)} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">Cancelar</button>
@@ -112,3 +111,4 @@ export default function MantenimientosListPage() {
     </div>
   );
 }
+
