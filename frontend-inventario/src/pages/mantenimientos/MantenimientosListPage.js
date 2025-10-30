@@ -7,10 +7,13 @@ import { updateEquipo, darDeBajaEquipo } from '../../core/api/equipos.api';
 
 export default function MantenimientosListPage() {
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [equipoId, setEquipoId] = useState('');
+  const [estado, setEstado] = useState('');
+  const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ equipoId: '', fecha: '', tipo: 'PREVENTIVO', descripcion: '' });
-  const { data, isLoading, error } = useMantenimientosList({ page, limit: 10, equipoId: equipoId || undefined });
+  const { data, isLoading, error } = useMantenimientosList({ page, limit, equipoId: equipoId || undefined, estado: estado || undefined, search: search || undefined });
   const { data: equipos } = useEquiposForSelect();
   const createMut = useMantenimientoCreate();
   const qc = useQueryClient();
@@ -85,18 +88,48 @@ export default function MantenimientosListPage() {
     <div className="mx-auto max-w-5xl p-4 lg:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900">Mantenimientos</h1>
-        <button onClick={() => setOpen(true)} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white">+ Programar</button>
+        <button onClick={() => setOpen(true)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Programar</button>
       </div>
 
       <div className="mb-4 flex items-center gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar (descripción, equipo, técnico)"
+          className="w-56 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm"
+        />
         <select value={equipoId} onChange={(e) => setEquipoId(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
           <option value="">Equipo (todos)</option>
           {(equipos || []).map(eq => <option key={eq.id} value={eq.id}>{eq.codigoInterno}</option>)}
         </select>
+        <select value={estado} onChange={(e) => setEstado(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
+          <option value="">Estado (todos)</option>
+          <option value="PROGRAMADO">PROGRAMADO</option>
+          <option value="EN PROGRESO">EN PROGRESO</option>
+          <option value="COMPLETO">COMPLETO</option>
+          <option value="CANCELADO">CANCELADO</option>
+        </select>
         <button onClick={() => setPage(1)} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">Filtrar</button>
+        <div className="ml-auto flex items-center gap-2 text-sm">
+          <label className="text-slate-600">Mostrar por página</label>
+          <select
+            value={limit}
+            onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }}
+            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm shadow-sm"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm">
+        <div className="flex items-center justify-between px-2 pb-2">
+          <h3 className="text-sm text-slate-600">Total: {data?.total ?? 0}</h3>
+        </div>
         {isLoading ? (
           <div className="p-6 text-center text-slate-500">Cargando…</div>
         ) : error ? (
@@ -155,6 +188,43 @@ export default function MantenimientosListPage() {
           </table>
         )}
       </div>
+
+      {/* Paginación */}
+      {((data?.total || 0) > (data?.limit || 10)) && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={(data?.page || 1) === 1}
+            style={{
+              padding: '0.5rem',
+              border: '1px solid #d1d5db',
+              background: (data?.page || 1) === 1 ? '#f9fafb' : 'white',
+              cursor: (data?.page || 1) === 1 ? 'not-allowed' : 'pointer',
+              borderRadius: '0.25rem'
+            }}
+          >
+            Anterior
+          </button>
+
+          <span style={{ padding: '0 1rem', color: '#6b7280' }}>
+            Página {data?.page || 1} de {Math.max(1, Math.ceil((data?.total || 0) / (data?.limit || 10)))}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={((data?.page || 1) * (data?.limit || 10)) >= (data?.total || 0)}
+            style={{
+              padding: '0.5rem',
+              border: '1px solid #d1d5db',
+              background: ((data?.page || 1) * (data?.limit || 10)) >= (data?.total || 0) ? '#f9fafb' : 'white',
+              cursor: ((data?.page || 1) * (data?.limit || 10)) >= (data?.total || 0) ? 'not-allowed' : 'pointer',
+              borderRadius: '0.25rem'
+            }}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
