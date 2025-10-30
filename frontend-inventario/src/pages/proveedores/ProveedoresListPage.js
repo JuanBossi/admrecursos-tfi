@@ -11,6 +11,7 @@ export default function ProveedoresListPage() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({ razonSocial: '', cuit: '', contacto: '', email: '', telefono: '', direccion: '' });
+  const [formError, setFormError] = useState('');
 
   const { data, isLoading, error } = useProveedoresList(filtros);
   const createMut = useProveedorCreate();
@@ -21,12 +22,47 @@ export default function ProveedoresListPage() {
   const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / (filtros.limit || 10)));
 
+  function normalizarCuit(cuit) {
+    if (!cuit) return '';
+    return String(cuit).replace(/[^0-9]/g, '');
+  }
+
+
+  function validarFormulario(values) {
+    const errores = [];
+    if (!values.razonSocial?.trim()) errores.push('La Razón Social es obligatoria.');
+    const cuitDigits = normalizarCuit(values.cuit);
+    if (!cuitDigits) errores.push('El CUIT es obligatorio.');
+    else if (cuitDigits.length !== 11) errores.push('CUIT inválido. Debe tener 11 dígitos.');
+    if (values.email && !/^\S+@\S+\.\S+$/.test(values.email)) errores.push('Email inválido.');
+    if (values.telefono && values.telefono.replace(/\D/g, '').length < 6) errores.push('Teléfono demasiado corto.');
+    return errores;
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
+    setFormError('');
+    const errores = validarFormulario(form);
+    if (errores.length > 0) {
+      setFormError(errores.join('\n'));
+      return;
+    }
     if (editando) {
-      await updateMut.mutateAsync({ id: editando.id, data: form });
+      try {
+        await updateMut.mutateAsync({ id: editando.id, data: form });
+      } catch (err) {
+        const apiMsg = err?.response?.data?.message;
+        setFormError(Array.isArray(apiMsg) ? apiMsg.join('\n') : (apiMsg || 'No se pudo actualizar el proveedor'));
+        return;
+      }
     } else {
-      await createMut.mutateAsync(form);
+      try {
+        await createMut.mutateAsync(form);
+      } catch (err) {
+        const apiMsg = err?.response?.data?.message;
+        setFormError(Array.isArray(apiMsg) ? apiMsg.join('\n') : (apiMsg || 'No se pudo crear el proveedor'));
+        return;
+      }
     }
     setMostrarModal(false);
     setEditando(null);
@@ -128,6 +164,11 @@ export default function ProveedoresListPage() {
           <div style={{ background: 'white', padding: 16, borderRadius: 8, width: '90%', maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginTop: 0 }}>{editando ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h3>
             <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
+              {formError && (
+                <div style={{ whiteSpace: 'pre-wrap', background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 8, padding: '8px 12px', fontSize: 14 }}>
+                  {formError}
+                </div>
+              )}
               <label style={{ display: 'grid', gap: 6 }}>
                 <span>Razón Social *</span>
                 <input required value={form.razonSocial} onChange={(e) => setForm(f => ({ ...f, razonSocial: e.target.value }))} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
