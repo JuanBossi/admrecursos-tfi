@@ -27,4 +27,28 @@ export async function createMantenimiento(payload) {
   throw new Error('Error al crear el mantenimiento');
 }
 
+export async function fetchMantenimientosProximos({ dias = 30 } = {}) {
+  // Intento 1: endpoint dedicado /mantenimientos/proximos?dias=...
+  try {
+    const url1 = `${BASE_URL}/mantenimientos/proximos?dias=${encodeURIComponent(dias)}`;
+    const res1 = await fetch(url1);
+    if (res1.ok) {
+      const json1 = await res1.json();
+      if (json1?.data) return json1.data;
+    }
+  } catch (_) {}
 
+  // Intento 2: usar el listado general con params comunes
+  const params = new URLSearchParams();
+  params.set('estado', 'PROGRAMADO');
+  params.set('dias', String(dias));          // si tu API usa "dias"
+  params.set('hastaDias', String(dias));     // o "hastaDias" (quedará duplicado si tu backend ignora uno)
+  const url2 = `${BASE_URL}/mantenimientos?${params.toString()}`;
+
+  const res2 = await fetch(url2);
+  if (!res2.ok) throw new Error(`Error ${res2.status}: ${res2.statusText}`);
+  const json2 = await res2.json();
+  if (json2?.ok && json2?.data) return json2.data;
+
+  throw new Error('Respuesta del servidor no válida para mantenimientos próximos');
+}

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchEquipos,
@@ -8,6 +9,7 @@ import {
   fetchAreas,
   fetchEmpleados,
   fetchProveedores,
+  fetchGarantiasPorVencer
 } from '../api/equipos.api';
 
 export function useEquiposList(q = {}) {
@@ -82,4 +84,54 @@ export function useProveedores() {
     queryFn: fetchProveedores,
     staleTime: 10 * 60_000,
   });
+}
+
+function daysUntil(iso) {
+  if (!iso) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const raw = new Date(iso);
+  const due = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate());
+  return Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+}
+
+export function useGarantiasPorVencer({ dias = 30 } = {}) {
+  const q = useQuery({
+    // cambiamos la key para forzar refetch limpio
+    queryKey: ['garantias-por-vencer-v4', dias],
+    queryFn: () => fetchGarantiasPorVencer({ dias }),
+    staleTime: 30_000,
+  });
+
+  const data = useMemo(() => {
+    const arr = Array.isArray(q.data) ? q.data : [];
+
+    return arr
+      .map((row) => {
+        const venceElRaw = row.venceEl ?? row.garantia ?? null;
+
+        const venceEl =
+          venceElRaw instanceof Date
+            ? venceElRaw.toISOString().slice(0, 10)
+            : (typeof venceElRaw === 'string' || typeof venceElRaw === 'number'
+                ? String(venceElRaw)
+                : null);
+
+        const diasRestantes =
+          Number.isFinite(row.diasRestantes)
+            ? row.diasRestantes
+            : (venceEl ? daysUntil(venceEl) : null);
+
+        return {
+          id: row.id ?? row.equipoId ?? row.codigo ?? String(Math.random()),
+          // tu back aliasea codigo_interno AS nombre
+          nombre: row.nombre ?? row.equipo ?? row.codigo ?? 'Equipo',
+          venceEl,
+          diasRestantes: diasRestantes ?? 9999,
+        };
+      })
+      .sort((a, b) => (a.diasRestantes ?? 9999) - (b.diasRestantes ?? 9999));
+  }, [q.data]);
+
+  return { ...q, data, dias };
 }

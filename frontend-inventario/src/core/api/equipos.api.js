@@ -139,11 +139,39 @@ export async function fetchProveedores() {
   throw new Error('Respuesta del servidor no válida');
 }
 
-// ...otros exports arriba
+export async function fetchGarantiasPorVencer({ dias = 30 } = {}) {
+  const res = await fetch(`${BASE_URL}/equipos/garantias?dias=${encodeURIComponent(dias)}`);
 
-export async function fetchGarantias({ dias = 30 } = {}) {
-  const res = await fetch(`/equipos/alertas/garantia?dias=${encodeURIComponent(dias)}`);
-  if (!res.ok) throw new Error('No se pudieron cargar las alertas de garantía');
-  return res.json(); // { total, vencidas: { total, items }, proximas: { total, items }, rango: {...} }
+  // 1) Axios -> res.data; fetch -> await res.json()
+  let payload = res && typeof res === 'object' ? res.data : undefined;
+  if (payload === undefined && res && typeof res.json === 'function') {
+    try {
+      payload = await res.json();
+    } catch (_) {}
+  }
+  // 2) Fallback extremo: a veces ya viene el body como objeto en res
+  if (payload === undefined && res && typeof res === 'object' && !('status' in res) && !('ok' in res)) {
+    payload = res;
+  }
+
+  /*// 🔎 Logs de diagnóstico (podés quitarlos luego)
+  try {
+    const base = BASE_URL || '';
+    const url = `${String(base).replace(/\/$/, '')}/equipos/garantias?dias=${encodeURIComponent(dias)}`;
+    console.log('[Garantías] URL:', url);
+    console.log('[Garantías] raw payload:', payload);
+  } catch {}*/
+
+  // 3) Normalización a ARRAY
+ const arr =
+    Array.isArray(payload)                  ? payload
+  : Array.isArray(payload?.data?.data)      ? payload.data.data
+  : Array.isArray(payload?.data)            ? payload.data
+  : Array.isArray(payload?.rows)            ? payload.rows
+  : Array.isArray(payload?.items)           ? payload.items
+  : (payload?.ok && Array.isArray(payload?.data?.data)) ? payload.data.data
+  : (payload?.ok && Array.isArray(payload?.data))       ? payload.data
+  : [];
+
+  return arr;
 }
-

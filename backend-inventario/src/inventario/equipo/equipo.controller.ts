@@ -18,10 +18,9 @@ export class EquipoController {
     return this.service.findAll(q);
   }
 
-  @Get('alertas/garantia')
-  proximasGarantias(@Query('dias') dias?: string) {
-    const n = dias ? Number(dias) : 30;
-    return this.service.proximasGarantias(Number.isFinite(n) ? n : 30);
+  @Get('garantias')
+  garantias(@Query('dias') dias = 30) {
+    return this.service.garantiasPorVencer(Number(dias) || 30);
   }
 
   @Get(':id')

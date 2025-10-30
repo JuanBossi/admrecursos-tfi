@@ -9,12 +9,10 @@ import AlertasListPage from './pages/alertas/AlertasListPage';
 import PerifericosListPage from './pages/perifericos/PerifericosListPage';
 import TecnicosListPage from './pages/tecnicos/TecnicosListPage';
 
-// 👇 importa tu login en usuarios/loginpage.js (exportación por defecto)
 import LoginPage from './pages/usuarios/loginpage';
 
 const queryClient = new QueryClient();
 
-// Wrapper de protección
 function RequireAuth({ children }) {
   const location = useLocation();
   const pwd = typeof window !== 'undefined'
@@ -27,7 +25,6 @@ function RequireAuth({ children }) {
   return children;
 }
 
-// Logout mínimo (opcional)
 function LogoutPage() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('adm-tfi.password');
