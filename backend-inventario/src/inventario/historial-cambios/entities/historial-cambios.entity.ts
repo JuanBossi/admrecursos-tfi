@@ -11,6 +11,7 @@ import { Usuario } from '../../../acceso/usuario/entities/usuario.entity';
 export enum HistorialAccion {
   REPARADO = 'REPARADO',
   ROTO = 'ROTO',
+  BAJA = 'BAJA',
 }
 
 @Entity('historial_cambios')

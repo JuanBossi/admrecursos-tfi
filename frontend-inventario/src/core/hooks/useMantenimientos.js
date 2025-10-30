@@ -1,4 +1,21 @@
-export function useMantenimientosProximos() {
-  // Cuando tengas endpoint, reemplazá por un useQuery real
-  return { data: { total: 0, items: [] }, isLoading: false };
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchMantenimientos, createMantenimiento } from '../api/mantenimientos.api';
+
+export function useMantenimientosList(q = {}) {
+  return useQuery({
+    queryKey: ['mantenimientos', q],
+    queryFn: () => fetchMantenimientos(q),
+    staleTime: 60_000,
+    keepPreviousData: true,
+  });
+}
+
+export function useMantenimientoCreate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createMantenimiento,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mantenimientos'] });
+    },
+  });
 }

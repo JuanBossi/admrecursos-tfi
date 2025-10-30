@@ -15,6 +15,7 @@ import { MantenimientoModule } from './inventario/mantenimiento/mantenimiento.mo
 import { HistorialCambiosModule } from './inventario/historial-cambios/historial-cambios.module';
 import { RolModule } from './acceso/rol/rol.module';
 import { UsuarioModule } from './acceso/usuario/usuario.module';
+import { AuthModule } from './acceso/auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsuarioModule } from './acceso/usuario/usuario.module';
     HistorialCambiosModule,
     RolModule,
     UsuarioModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

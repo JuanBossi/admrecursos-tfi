@@ -61,6 +61,47 @@ export async function createEquipo(payload) {
   throw new Error('Error al crear el equipo');
 }
 
+export async function updateEquipo(id, payload) {
+  const body = {
+    ...payload,
+    proveedorId: payload.proveedorId !== '' ? payload.proveedorId : undefined,
+    areaId: payload.areaId !== '' ? payload.areaId : undefined,
+    empleadoAsignadoId: payload.empleadoAsignadoId !== '' ? payload.empleadoAsignadoId : undefined,
+    estado: payload.estado || undefined,
+    fechaCompra: payload.fechaCompra || undefined,
+    garantia: payload.garantia || undefined,
+  };
+  const res = await fetch(`${BASE_URL}/equipos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const response = await res.json();
+  if (response.ok && response.data) return response.data;
+  throw new Error('Error al actualizar el equipo');
+}
+
+export async function deleteEquipo(id) {
+  const res = await fetch(`${BASE_URL}/equipos/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await res.text());
+  const response = await res.json();
+  if (response.ok) return response.data;
+  throw new Error('Error al eliminar el equipo');
+}
+
+export async function darDeBajaEquipo(id, motivo) {
+  const res = await fetch(`${BASE_URL}/equipos/${id}/baja`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const response = await res.json();
+  if (response.ok && response.data) return response.data;
+  throw new Error('Error al dar de baja el equipo');
+}
+
 // Auxiliares para selects (ajustá endpoints y mapeos si hace falta)
 export async function fetchAreas() {
   const res = await fetch(`${BASE_URL}/areas?page=1&limit=200`);

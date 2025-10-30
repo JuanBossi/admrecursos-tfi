@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { EquipoService } from './equipo.service';
 import { CreateEquipoDto } from './dto/create-equipo.dto';
-import { UpdateEquipoDto } from './dto/update-equipo.dto';
+import { UpdateEquipoDto, BajaEquipoDto } from './dto/update-equipo.dto';
 import { QueryEquipoDto } from './dto/query-equipo.dto';
 
 @Controller('equipos')
@@ -37,5 +37,10 @@ export class EquipoController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }
+
+  @Patch(':id/baja')
+  darDeBaja(@Param('id') id: string, @Body() body: BajaEquipoDto) {
+    return this.service.darDeBaja(id, body);
   }
 }

@@ -9,8 +9,8 @@ import AlertasListPage from './pages/alertas/AlertasListPage';
 import PerifericosListPage from './pages/perifericos/PerifericosListPage';
 import TecnicosListPage from './pages/tecnicos/TecnicosListPage';
 
-// 👇 importa tu login en usuarios/loginpage.js (respetando tu path real)
-import { LoginPage } from './pages/usuarios/loginpage';
+// 👇 importa tu login en usuarios/loginpage.js (exportación por defecto)
+import LoginPage from './pages/usuarios/loginpage';
 
 const queryClient = new QueryClient();
 

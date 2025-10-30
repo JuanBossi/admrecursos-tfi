@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchEquipos,
   createEquipo,
+  updateEquipo,
+  deleteEquipo,
+  darDeBajaEquipo,
   fetchAreas,
   fetchEmpleados,
   fetchProveedores,
@@ -20,6 +23,36 @@ export function useEquipoCreate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createEquipo,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['equipos'] });
+    },
+  });
+}
+
+export function useEquipoUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => updateEquipo(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['equipos'] });
+    },
+  });
+}
+
+export function useEquipoDelete() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteEquipo,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['equipos'] });
+    },
+  });
+}
+
+export function useEquipoBaja() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }) => darDeBajaEquipo(id, motivo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['equipos'] });
     },

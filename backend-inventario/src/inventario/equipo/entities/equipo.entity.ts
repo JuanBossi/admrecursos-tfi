@@ -49,6 +49,9 @@ export class Equipo {
   @Column({ type: 'enum', enum: EquipoEstado, default: EquipoEstado.ACTIVO })
   estado: EquipoEstado;
 
+  @Column({ name: 'motivo_baja', type: 'varchar', length: 200, nullable: true })
+  motivoBaja?: string;
+
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
 

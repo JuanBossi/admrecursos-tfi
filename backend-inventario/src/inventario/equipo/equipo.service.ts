@@ -1,14 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, FindOptionsWhere, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, ILike, LessThanOrEqual, Repository } from 'typeorm';
 import { Equipo, EquipoEstado, EquipoTipo } from './entities/equipo.entity';
 import { CreateEquipoDto } from './dto/create-equipo.dto';
-import { UpdateEquipoDto } from './dto/update-equipo.dto';
+import { BajaEquipoDto, UpdateEquipoDto } from './dto/update-equipo.dto';
 import { QueryEquipoDto } from './dto/query-equipo.dto';
+import { HistorialCambios, HistorialAccion } from '../historial-cambios/entities/historial-cambios.entity';
 
 @Injectable()
 export class EquipoService {
-  constructor(@InjectRepository(Equipo) private repo: Repository<Equipo>) {}
+  constructor(
+    @InjectRepository(Equipo) private repo: Repository<Equipo>,
+    @InjectRepository(HistorialCambios) private histRepo: Repository<HistorialCambios>,
+  ) {}
 
   async create(dto: CreateEquipoDto) {
     const equipo = this.repo.create({
@@ -82,6 +86,19 @@ export class EquipoService {
     const equipo = await this.findOne(id);
     await this.repo.remove(equipo);
     return { deleted: true };
+  }
+
+  async darDeBaja(id: string, dto: BajaEquipoDto) {
+    const equipo = await this.findOne(id);
+    equipo.estado = EquipoEstado.BAJA;
+    equipo.motivoBaja = dto.motivo;
+    const saved = await this.repo.save(equipo);
+    await this.histRepo.save(this.histRepo.create({
+      equipo: { id } as any,
+      accion: HistorialAccion.BAJA,
+      motivo: dto.motivo,
+    }));
+    return saved;
   }
 
   /**
