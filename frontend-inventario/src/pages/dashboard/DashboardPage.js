@@ -1,91 +1,50 @@
+// src/pages/dashboard/DashboardPage.js
 import { Link } from 'react-router-dom';
-import { useEstadisticas } from '../../core/hooks/useEstadisticas';
 import { useMemo } from 'react';
+import { useEstadisticas } from '../../core/hooks/useEstadisticas';
+import { useGarantiasPorVencer } from '../../core/hooks/useEquipos';
+import { useMantenimientosProximos } from '../../core/hooks/useMantenimientos';
+
+/** Utils */
+const fmtDate = (val) => {
+  if (!val) return '—';
+  const d = val instanceof Date ? val : new Date(val);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+};
+
+const badgeClassesPorDias = (d) => {
+  if (d <= 7) return 'bg-red-100 text-red-700 ring-1 ring-red-200';
+  if (d <= 15) return 'bg-amber-100 text-amber-700 ring-1 ring-amber-200';
+  return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200';
+};
 
 export default function DashboardPage() {
   const { data: estadisticas, isLoading, error } = useEstadisticas();
+  const {
+    data: garantias,
+    isLoading: guarLoading,
+    error: guarError,
+    dias: ventanaDias,
+  } = useGarantiasPorVencer({ dias: 30 });
+  const {
+    data: proximos,
+    isLoading: mantLoading,
+    error: mantError,
+  } = useMantenimientosProximos({ dias: 30 });
 
-  const cards = useMemo(() => {
+  const topCards = useMemo(() => {
     if (!estadisticas) return [];
-    
     return [
-      { 
-        title: 'Equipos Totales', 
-        value: estadisticas.equipos.total, 
-        to: '/equipos',
-        icon: '💻',
-        description: `${estadisticas.equipos.activos} activos, ${estadisticas.equipos.enReparacion} en reparación`
-      },
-      { 
-        title: 'Equipos Activos', 
-        value: estadisticas.equipos.activos, 
-        to: '/equipos',
-        icon: '✅',
-        tone: 'success'
-      },
-      { 
-        title: 'En Reparación', 
-        value: estadisticas.equipos.enReparacion, 
-        to: '/equipos',
-        icon: '🔧',
-        tone: 'warning'
-      },
-      { 
-        title: 'Equipos de Baja', 
-        value: estadisticas.equipos.deBaja, 
-        to: '/equipos',
-        icon: '❌',
-        tone: 'danger'
-      },
-      { 
-        title: 'Alertas', 
-        value: estadisticas.alertas.total, 
-        to: '/alertas',
+      { title: 'Equipos totales', value: estadisticas.equipos?.total ?? 0, to: '/equipos', icon: '💻' },
+      { title: 'Equipos activos', value: estadisticas.equipos?.activos ?? 0, to: '/equipos?estado=ACTIVO', icon: '✅' },
+      { title: 'En reparación', value: estadisticas.equipos?.enReparacion ?? 0, to: '/equipos?estado=REPARACION', icon: '🔧' },
+      {
+        title: 'Alertas activas',
+        value: estadisticas.alertas?.activas ?? estadisticas.alertas?.total ?? 0,
+        to: '/alertas?estado=ACTIVA',
         icon: '⚠️',
-        description: `${estadisticas.alertas.recientes} recientes`,
-        tone: estadisticas.alertas.total > 0 ? 'danger' : 'success'
-      },
-      { 
-        title: 'Mantenimientos', 
-        value: estadisticas.mantenimientos.total, 
-        to: '/mantenimientos',
-        icon: '🛠️',
-        description: `${estadisticas.mantenimientos.programados} programados`
-      },
-      { 
-        title: 'Técnicos', 
-        value: estadisticas.tecnicos.total, 
-        to: '/tecnicos',
-        icon: '👨‍💻',
-        description: `${estadisticas.tecnicos.internos} internos, ${estadisticas.tecnicos.externos} externos`
-      },
-      { 
-        title: 'Usuarios', 
-        value: estadisticas.usuarios.total, 
-        to: '/usuarios',
-        icon: '👥',
-        description: `${estadisticas.usuarios.activos} activos, ${estadisticas.usuarios.inactivos} inactivos`
-      },
-      { 
-        title: 'Administradores', 
-        value: estadisticas.usuarios.porRol.administrador, 
-        to: '/usuarios',
-        icon: '👑',
-        tone: 'success'
-      },
-      { 
-        title: 'Técnicos (Usuarios)', 
-        value: estadisticas.usuarios.porRol.tecnico, 
-        to: '/usuarios',
-        icon: '🔧',
-        tone: 'info'
-      },
-      { 
-        title: 'Consulta', 
-        value: estadisticas.usuarios.porRol.consulta, 
-        to: '/usuarios',
-        icon: '👁️',
-        tone: 'info'
+        tone: (estadisticas.alertas?.activas ?? estadisticas.alertas?.total ?? 0) > 0 ? 'danger' : 'ok',
       },
     ];
   }, [estadisticas]);
@@ -93,9 +52,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="card">
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p>Cargando estadísticas...</p>
-        </div>
+        <div className="text-center py-8">Cargando estadísticas…</div>
       </div>
     );
   }
@@ -103,8 +60,8 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="card">
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#dc2626' }}>
-          <p>Error al cargar las estadísticas: {error.message}</p>
+        <div className="text-center py-8 text-red-600">
+          Error al cargar estadísticas: {error.message}
         </div>
       </div>
     );
@@ -112,129 +69,123 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 style={{ margin: '0 0 1.5rem 0', fontSize: '1.875rem', fontWeight: '700', color: '#1f2937' }}>
-        Dashboard del Sistema de Inventario
-      </h1>
+      <h1 className="mb-6 text-3xl font-bold text-gray-800">Dashboard</h1>
 
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-        {cards.map((c) => (
+      {/* Fila 1: Cards resumen */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {topCards.map((c) => (
           <Link
             key={c.title}
             to={c.to}
-            style={{
-              display: 'block',
-              background: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '0.75rem',
-              padding: '1.5rem',
-              textDecoration: 'none',
-              color: 'inherit',
-              transition: 'all 0.2s',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
-            }}
+            className="block bg-white border border-gray-200 rounded-xl p-5 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md"
           >
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '2rem', marginRight: '0.75rem' }}>{c.icon}</span>
-              <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: '#374151' }}>
-                {c.title}
-              </h3>
+            <div className="flex items-center mb-3">
+              <span className="text-2xl mr-3">{c.icon}</span>
+              <h3 className="m-0 text-base font-semibold text-gray-700">{c.title}</h3>
             </div>
-            
-            <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#1f2937', marginBottom: '0.5rem' }}>
-              {c.value}
-            </div>
-            
-            {c.description && (
-              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
-                {c.description}
-              </div>
-            )}
-
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              fontSize: '0.875rem', 
-              fontWeight: '500', 
-              color: '#3b82f6' 
-            }}>
-              <span>Ver más</span>
-              <span style={{ marginLeft: '0.5rem' }}>→</span>
-            </div>
-
-            {/* Barra de color inferior */}
-            <div
-              style={{
-                height: '4px',
-                width: '100%',
-                borderRadius: '0 0 0.75rem 0.75rem',
-                margin: '1rem -1.5rem -1.5rem -1.5rem',
-                background: c.tone === 'danger' ? '#ef4444' :
-                           c.tone === 'warning' ? '#f59e0b' :
-                           c.tone === 'success' ? '#10b981' : '#6b7280'
-              }}
-            />
+            <div className="text-4xl font-extrabold text-gray-900 mb-1">{c.value}</div>
+            {c.desc && <p className="text-sm text-gray-500">{c.desc}</p>}
+            <div className={`h-1.5 w-full rounded-b-xl mt-4 -mb-5 ${c.tone === 'danger' ? 'bg-red-500' : 'bg-blue-500'}`} />
           </Link>
         ))}
       </div>
 
-      {/* Sección de resumen adicional */}
-      {estadisticas && (
-        <div className="card" style={{ marginTop: '2rem' }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600' }}>
-            Resumen del Sistema
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>
-                Equipos por Tipo
-              </h4>
-              <div style={{ fontSize: '0.875rem' }}>
-                <div>PC: {estadisticas.equipos.porTipo.PC}</div>
-                <div>Notebook: {estadisticas.equipos.porTipo.NOTEBOOK}</div>
-                <div>Servidor: {estadisticas.equipos.porTipo.SERVIDOR}</div>
-              </div>
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>
-                Estado de Mantenimientos
-              </h4>
-              <div style={{ fontSize: '0.875rem' }}>
-                <div>Programados: {estadisticas.mantenimientos.programados}</div>
-                <div>En Progreso: {estadisticas.mantenimientos.enProgreso}</div>
-                <div>Completos: {estadisticas.mantenimientos.completos}</div>
-              </div>
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>
-                Usuarios por Rol
-              </h4>
-              <div style={{ fontSize: '0.875rem' }}>
-                <div>Administradores: {estadisticas.usuarios.porRol.administrador}</div>
-                <div>Técnicos: {estadisticas.usuarios.porRol.tecnico}</div>
-                <div>Consulta: {estadisticas.usuarios.porRol.consulta}</div>
-              </div>
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>
-                Estado de Equipos
-              </h4>
-              <div style={{ fontSize: '0.875rem' }}>
-                <div>Activos: {estadisticas.equipos.activos}</div>
-                <div>En Reparación: {estadisticas.equipos.enReparacion}</div>
-                <div>De Baja: {estadisticas.equipos.deBaja}</div>
-              </div>
-            </div>
+      {/* Fila 2: Garantías por vencer (grande) + Mantenimientos próximos (derecha) */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-6 items-start">
+        {/* Columna izquierda (2/3): Garantías */}
+        <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Garantías por vencer <span className="text-gray-400">({ventanaDias} días)</span>
+            </h2>
+            <Link to="/equipos?garantia=por-vencer" className="text-sm font-medium text-blue-600 hover:underline">
+              Ver todos →
+            </Link>
           </div>
+
+          {guarLoading && <div className="py-6 text-center">Cargando garantías…</div>}
+          {guarError && <div className="py-6 text-center text-red-600">Error al cargar garantías: {guarError.message}</div>}
+
+          {!guarLoading && !guarError && (
+            <>
+              {!garantias || garantias.length === 0 ? (
+                <div className="py-8 text-center text-gray-500">No hay garantías por vencer en {ventanaDias} días.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="text-left font-medium px-4 py-3">Equipo</th>
+                        <th className="text-left font-medium px-4 py-3">Vence</th>
+                        <th className="text-right font-medium px-4 py-3">Días restantes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {garantias.map((g) => (
+                        <tr key={g.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <Link to={`/equipos/${g.id}`} className="text-blue-700 hover:underline font-medium">
+                              {g.nombre}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">{fmtDate(g.venceEl)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClassesPorDias(g.diasRestantes)}`}>
+                              {g.diasRestantes} días
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+
+        {/* Columna derecha (1/3): Mantenimientos próximos */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Mantenimientos próximos</h2>
+            <Link to="/mantenimientos?estado=programado" className="text-sm font-medium text-blue-600 hover:underline">
+              Ver todos →
+            </Link>
+          </div>
+
+          {mantLoading && <div className="py-6 text-center">Cargando mantenimientos…</div>}
+          {mantError && <div className="py-6 text-center text-red-600">Error al cargar mantenimientos: {mantError.message}</div>}
+
+          {!mantLoading && !mantError && (
+            <>
+              {!proximos || proximos.length === 0 ? (
+                <div className="py-8 text-center text-gray-500">No hay mantenimientos próximos.</div>
+              ) : (
+                <ul className="space-y-3">
+                  {proximos.map((m) => (
+                    <li key={m.id} className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-sm text-gray-500">{fmtDate(m.fecha)}</div>
+                          <div className="font-medium text-gray-800">
+                            <Link to={`/equipos/${m.equipoId ?? ''}`} className="hover:underline text-blue-700">
+                              {m.equipo}
+                            </Link>
+                          </div>
+                          <div className="text-sm text-gray-600">{m.detalle}</div>
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200">
+                          {m.tecnico ?? 'Sin técnico'}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

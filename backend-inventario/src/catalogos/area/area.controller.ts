@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { AreaService } from './area.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
+import { Public } from '../../acceso/auth/decorators/public.decorator';
 
 @Controller('areas')
 export class AreaController {
@@ -30,5 +31,12 @@ export class AreaController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }
+
+  // Endpoint de utilidad para cargar áreas por defecto (dev)
+  @Public()
+  @Post('dev/seed')
+  seed(@Body('names') names?: string[]) {
+    return this.service.seedDefaults(names);
   }
 }

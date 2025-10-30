@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoDelete, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { useAuth } from '../../core/auth/AuthContext';
+import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { exportToCSV, exportToPrintablePDF, formatDate } from '../../utils/export';
 
 export default function EquiposListPage() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const canAdd = isAdmin || isTecnico;
   const [filtros, setFiltros] = useState({
     search: '',
     areaId: '',
@@ -12,6 +18,7 @@ export default function EquiposListPage() {
   
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [formError, setFormError] = useState('');
   const [mostrarPerifs, setMostrarPerifs] = useState({ open: false, equipo: null });
   const [formulario, setFormulario] = useState({
     codigoInterno: '',
@@ -31,7 +38,6 @@ export default function EquiposListPage() {
   const { data: proveedoresData } = useProveedores();
   const createMutation = useEquipoCreate();
   const updateMutation = useEquipoUpdate();
-  const deleteMutation = useEquipoDelete();
   const bajaMutation = useEquipoBaja();
   const [bajaModal, setBajaModal] = useState({ open: false, equipo: null, motivo: '' });
 
@@ -76,8 +82,17 @@ export default function EquiposListPage() {
         fechaCompra: '',
         garantia: ''
       });
+      setFormError('');
     } catch (error) {
-      console.error('Error al crear equipo:', error);
+      let msg = 'Error al guardar equipo';
+      try {
+        // Algunos errores vienen con response.text como JSON string
+        const parsed = JSON.parse(error.message);
+        if (parsed?.message) msg = parsed.message;
+      } catch (_) {
+        if (error?.message) msg = String(error.message);
+      }
+      setFormError(msg);
     }
   };
 
@@ -113,20 +128,22 @@ export default function EquiposListPage() {
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Equipos</h1>
-        <button
-          onClick={() => { setEditando(null); setMostrarModal(true); }}
-          style={{
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
-        >
-          + Agregar Equipo
-        </button>
+        {canAdd && (
+          <button
+            onClick={() => { setEditando(null); setMostrarModal(true); }}
+            style={{
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            + Agregar Equipo
+          </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -191,7 +208,6 @@ export default function EquiposListPage() {
             >
               <option value="">Todos los estados</option>
               <option value="ACTIVO">Activo</option>
-              <option value="INACTIVO">Inactivo</option>
               <option value="REPARACION">En Reparación</option>
               <option value="BAJA">De Baja</option>
             </select>
@@ -227,6 +243,60 @@ export default function EquiposListPage() {
           <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
             Equipos ({total})
           </h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => {
+                const headers = [
+                  { key: 'codigoInterno', label: 'Código Interno' },
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'area', label: 'Área' },
+                  { key: 'asignado', label: 'Asignado a' },
+                  { key: 'estado', label: 'Estado' },
+                  { key: 'fechaCompra', label: 'Fecha Compra' },
+                  { key: 'garantia', label: 'Garantía' },
+                ];
+                const rows = (equipos || []).map(e => ({
+                  codigoInterno: e?.codigoInterno || '',
+                  tipo: e?.tipo || '',
+                  area: e?.area?.nombre || '',
+                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                  estado: e?.estado || '',
+                  fechaCompra: formatDate(e?.fechaCompra),
+                  garantia: formatDate(e?.garantia),
+                }));
+                exportToCSV('equipos', headers, rows);
+              }}
+              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+            >
+              Exportar Excel
+            </button>
+            <button
+              onClick={() => {
+                const headers = [
+                  { key: 'codigoInterno', label: 'Código Interno' },
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'area', label: 'Área' },
+                  { key: 'asignado', label: 'Asignado a' },
+                  { key: 'estado', label: 'Estado' },
+                  { key: 'fechaCompra', label: 'Fecha Compra' },
+                  { key: 'garantia', label: 'Garantía' },
+                ];
+                const rows = (equipos || []).map(e => ({
+                  codigoInterno: e?.codigoInterno || '',
+                  tipo: e?.tipo || '',
+                  area: e?.area?.nombre || '',
+                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                  estado: e?.estado || '',
+                  fechaCompra: formatDate(e?.fechaCompra),
+                  garantia: formatDate(e?.garantia),
+                }));
+                exportToPrintablePDF('Listado de Equipos', headers, rows);
+              }}
+              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+            >
+              Exportar PDF
+            </button>
+          </div>
         </div>
 
         {equipos.length === 0 ? (
@@ -254,11 +324,8 @@ export default function EquiposListPage() {
                   {equipos.map(equipo => (
                     <tr key={equipo.id}>
                       <td>
-                        <div>
-                          <div style={{ fontWeight: '500' }}>{equipo.codigoInterno}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                            {equipo.tipo}
-                          </div>
+                        <div style={{ fontWeight: '500' }}>
+                          {equipo.codigoInterno}
                         </div>
                       </td>
                       <td>{equipo.tipo || '-'}</td>
@@ -283,6 +350,11 @@ export default function EquiposListPage() {
                         }}>
                           {equipo.estado}
                         </span>
+                        {equipo.estado === 'BAJA' && equipo.motivoBaja && (
+                          <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#991b1b' }}>
+                            Motivo: {equipo.motivoBaja}
+                          </div>
+                        )}
                       </td>
                       <td>{equipo.fechaCompra ? new Date(equipo.fechaCompra).toLocaleDateString() : '-'}</td>
                       <td>{equipo.garantia ? new Date(equipo.garantia).toLocaleDateString() : '-'}</td>
@@ -314,28 +386,7 @@ export default function EquiposListPage() {
                           >
                             Editar
                           </button>
-                          <button
-                            style={{
-                              background: '#fee2e2',
-                              border: '1px solid #fecaca',
-                              color: '#991b1b',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                            onClick={async () => {
-                              if (window.confirm('¿Eliminar equipo? Esta acción no se puede deshacer.')) {
-                                try {
-                                  await deleteMutation.mutateAsync(equipo.id);
-                                } catch (err) {
-                                  console.error('Error al eliminar equipo:', err);
-                                }
-                              }
-                            }}
-                          >
-                            Eliminar
-                          </button>
+                          {equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
                           <button
                             onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
                             style={{
@@ -350,6 +401,7 @@ export default function EquiposListPage() {
                           >
                             Dar de baja
                           </button>
+                          )}
                           <button
                             onClick={() => setMostrarPerifs({ open: true, equipo })}
                             style={{
@@ -452,6 +504,11 @@ export default function EquiposListPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              {formError && (
+                <div style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '8px 10px', borderRadius: 6, marginBottom: 12, fontSize: 14 }}>
+                  {formError}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
@@ -461,6 +518,8 @@ export default function EquiposListPage() {
                     type="text"
                     value={formulario.codigoInterno}
                     onChange={(e) => handleInputChange('codigoInterno', e.target.value)}
+                    disabled={!!editando}
+                    readOnly={!!editando}
                     required
                     placeholder="Ej: EQ-0001"
                     style={{
@@ -539,66 +598,51 @@ export default function EquiposListPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Proveedor
-                  </label>
-                  <select
-                    value={formulario.proveedorId}
-                    onChange={(e) => handleInputChange('proveedorId', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="">Seleccionar proveedor</option>
+                {!editando && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      Proveedor
+                    </label>
+                    <select
+                      value={formulario.proveedorId}
+                      onChange={(e) => handleInputChange('proveedorId', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <option value="">Seleccionar proveedor</option>
                     {proveedoresData?.items?.map(proveedor => (
-                      <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
+                      <option key={proveedor.id} value={proveedor.id}>{proveedor.razonSocial || proveedor.nombre || proveedor.cuit}</option>
                     ))}
                   </select>
                 </div>
+                )}
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Estado
-                  </label>
-                  <select
-                    value={formulario.estado}
-                    onChange={(e) => handleInputChange('estado', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="ACTIVO">Activo</option>
-                    <option value="REPARACION">En Reparación</option>
-                    <option value="BAJA">De Baja</option>
-                  </select>
-                </div>
+                
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Fecha de Compra
-                  </label>
-                  <input
-                    type="date"
-                    value={formulario.fechaCompra}
-                    onChange={(e) => handleInputChange('fechaCompra', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
+                {!editando && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      Fecha de Compra
+                    </label>
+                    <input
+                      type="date"
+                      value={formulario.fechaCompra}
+                      onChange={(e) => handleInputChange('fechaCompra', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>

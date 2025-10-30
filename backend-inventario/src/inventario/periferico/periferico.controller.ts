@@ -3,12 +3,14 @@ import { PerifericoService } from './periferico.service';
 import { CreatePerifericoDto } from './dto/create-periferico.dto';
 import { UpdatePerifericoDto } from './dto/update-periferico.dto';
 import { QueryPerifericoDto } from './dto/query-periferico.dto';
+import { Roles } from '../../acceso/auth/decorators/roles.decorator';
 
 @Controller('perifericos')
 export class PerifericoController {
   constructor(private readonly service: PerifericoService) {}
 
   @Post()
+  @Roles('Administrador', 'Tecnico')
   create(@Body() dto: CreatePerifericoDto) {
     return this.service.create(dto);
   }

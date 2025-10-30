@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, DeepPartial } from 'typeorm';
 import { Area } from './entities/area.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
@@ -41,5 +41,19 @@ export class AreaService {
     const area = await this.findOne(id);
     await this.repo.remove(area);
     return { deleted: true };
+  }
+
+  async seedDefaults(names?: string[]) {
+    const defaults = (names && names.length ? names : ['Sistemas', 'Compras', 'Recursos Humanos']).map((n) => ({ nombre: n }));
+    const created: Area[] = [];
+    for (const def of defaults) {
+      const exists = await this.repo.findOne({ where: { nombre: def.nombre } });
+      if (!exists) {
+        const a = this.repo.create(def as DeepPartial<Area>);
+        created.push(await this.repo.save(a));
+      }
+    }
+    const total = await this.repo.count();
+    return { inserted: created.length, total };
   }
 }

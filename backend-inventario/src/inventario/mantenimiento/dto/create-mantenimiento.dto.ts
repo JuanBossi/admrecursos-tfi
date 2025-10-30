@@ -1,36 +1,30 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, IsNumberString, IsDateString } from 'class-validator';
-import { MantenimientoTipo, MantenimientoEstado } from '../entities/mantenimiento.entity';
+import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+
+export enum TipoMantenimiento {
+  Preventivo = 'Preventivo',
+  Correctivo = 'Correctivo',
+}
 
 export class CreateMantenimientoDto {
-  @IsNotEmpty()
-  @IsNumberString()
-  equipoId: string;
+  @IsInt()
+  @Min(1)
+  equipo_id: number;
 
-  @IsEnum(MantenimientoTipo)
-  tipo: MantenimientoTipo;
+  @IsEnum(TipoMantenimiento)
+  tipo: TipoMantenimiento;
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(500)
   descripcion: string;
 
-  @IsOptional()
-  @IsNumberString()
-  tecnicoId?: string;
-
-  @IsOptional()
-  @IsEnum(MantenimientoEstado)
-  estado?: MantenimientoEstado = MantenimientoEstado.PROGRAMADO;
-
-  @IsOptional()
   @IsDateString()
-  fechaProgramada?: string;
+  fecha_programada: string;
 
   @IsOptional()
-  @IsDateString()
-  fechaInicio?: string;
+  @IsInt()
+  tecnico_id?: number;
 
   @IsOptional()
-  @IsDateString()
-  fechaFin?: string;
+  @IsInt()
+  created_by?: number;
 }

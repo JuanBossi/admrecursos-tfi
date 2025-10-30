@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useTecnicosList, useTecnicoCreate, useTecnicoUpdate, useTecnicoDelete } from '../../core/hooks/useTecnicos';
 
 export default function TecnicosListPage() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const [filtros, setFiltros] = useState({
     search: '',
     page: 1,
@@ -96,6 +99,14 @@ export default function TecnicosListPage() {
     }));
   };
 
+  if (!isAdmin) {
+    return (
+      <div className="card">
+        <p style={{ margin: 0, color: '#991b1b' }}>Acceso restringido: solo administradores pueden ver los técnicos.</p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="card">
@@ -121,6 +132,7 @@ export default function TecnicosListPage() {
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Técnicos</h1>
+        {isAdmin && (
         <button
           onClick={() => {
             setEditando(null);
@@ -145,6 +157,7 @@ export default function TecnicosListPage() {
         >
           + Agregar Técnico
         </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -241,6 +254,7 @@ export default function TecnicosListPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {isAdmin && (
                           <button
                             onClick={() => handleEdit(tecnico)}
                             style={{
@@ -254,6 +268,8 @@ export default function TecnicosListPage() {
                           >
                             Editar
                           </button>
+                          )}
+                          {isAdmin && (
                           <button
                             onClick={() => handleDelete(tecnico.id)}
                             style={{
@@ -268,6 +284,7 @@ export default function TecnicosListPage() {
                           >
                             Eliminar
                           </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -421,10 +438,11 @@ export default function TecnicosListPage() {
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Contacto
+                    Email de contacto
                   </label>
                   <input
                     type="email"
+                    required
                     value={formulario.contacto}
                     onChange={(e) => handleInputChange('contacto', e.target.value)}
                     style={{

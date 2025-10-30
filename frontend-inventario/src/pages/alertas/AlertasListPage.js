@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useAlertasList, useAlertaCreate, useAlertaUpdate, useAlertaDelete } from '../../core/hooks/useAlertas';
 import { useEquiposList } from '../../core/hooks/useEquipos';
 
 export default function AlertasListPage() {
+  const { user } = useAuth();
+  const isEmpleado = !!user?.roles?.some(r => r?.nombre === 'Empleado');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const canCreate = isEmpleado || isTecnico || isAdmin;
+  const isTecnicoOrAdmin = isTecnico || isAdmin;
   const [filtros, setFiltros] = useState({
     search: '',
     page: 1,
@@ -48,10 +55,18 @@ export default function AlertasListPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setFormError('');
+      if (!formulario.mensaje || !formulario.mensaje.trim()) {
+        setFormError('El mensaje es obligatorio.');
+        return;
+      }
       if (editando) {
         await updateMutation.mutateAsync({ id: editando.id, data: formulario });
       } else {
-        await createMutation.mutateAsync(formulario);
+        await createMutation.mutateAsync({
+          mensaje: formulario.mensaje.trim(),
+          equipoId: formulario.equipoId ? String(formulario.equipoId) : undefined,
+        });
       }
       setMostrarModal(false);
       setEditando(null);
@@ -60,7 +75,14 @@ export default function AlertasListPage() {
         equipoId: ''
       });
     } catch (error) {
-      console.error('Error al guardar alerta:', error);
+      let msg = 'No se pudo guardar la alerta';
+      try {
+        const parsed = JSON.parse(error.message);
+        msg = parsed?.message || msg;
+      } catch (_) {
+        if (error?.message) msg = String(error.message);
+      }
+      setFormError(Array.isArray(msg) ? msg.join('\n') : msg);
     }
   };
 
@@ -115,6 +137,7 @@ export default function AlertasListPage() {
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Alertas</h1>
+        {canCreate && (
         <button
           onClick={() => {
             setEditando(null);
@@ -136,6 +159,7 @@ export default function AlertasListPage() {
         >
           + Agregar Alerta
         </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -230,6 +254,7 @@ export default function AlertasListPage() {
                       <td>{new Date(alerta.createdAt).toLocaleDateString()}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {isTecnicoOrAdmin && (
                           <button
                             onClick={() => handleEdit(alerta)}
                             style={{
@@ -243,6 +268,8 @@ export default function AlertasListPage() {
                           >
                             Editar
                           </button>
+                          )}
+                          {isTecnicoOrAdmin && (
                           <button
                             onClick={() => handleDelete(alerta.id)}
                             style={{
@@ -257,6 +284,7 @@ export default function AlertasListPage() {
                           >
                             Eliminar
                           </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -350,6 +378,11 @@ export default function AlertasListPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              {formError && (
+                <div style={{ whiteSpace: 'pre-wrap', background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: '0.5rem', padding: '8px 12px', fontSize: 14, marginBottom: 8 }}>
+                  {formError}
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>

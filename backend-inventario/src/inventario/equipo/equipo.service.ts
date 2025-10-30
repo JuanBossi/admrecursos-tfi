@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, FindOptionsWhere, ILike, LessThanOrEqual, Repository } from 'typeorm';
 import { Equipo, EquipoEstado, EquipoTipo } from './entities/equipo.entity';
@@ -15,6 +15,9 @@ export class EquipoService {
   ) {}
 
   async create(dto: CreateEquipoDto) {
+    // Validación de unicidad de código interno con mensaje claro
+    const exists = await this.repo.exists({ where: { codigoInterno: dto.codigoInterno } });
+    if (exists) throw new BadRequestException('Ya existe un equipo con ese código interno');
     const equipo = this.repo.create({
       codigoInterno: dto.codigoInterno,
       tipo: dto.tipo,
@@ -63,6 +66,15 @@ export class EquipoService {
   async update(id: string, dto: UpdateEquipoDto) {
     const equipo = await this.findOne(id);
 
+    // Si intenta cambiar el código interno, validar que no esté usado por otro
+    if (dto.codigoInterno !== undefined) {
+      const nuevo = dto.codigoInterno;
+      if (nuevo !== equipo.codigoInterno) {
+        const dup = await this.repo.exists({ where: { codigoInterno: nuevo } });
+        if (dup) throw new BadRequestException('Ya existe un equipo con ese código interno');
+      }
+    }
+
     if (dto.proveedorId !== undefined) {
       (equipo as any).proveedor = dto.proveedorId ? ({ id: dto.proveedorId } as any) : null;
     }
@@ -101,34 +113,37 @@ export class EquipoService {
     return saved;
   }
 
-  /**
-   * Equipos con garantía vencida o próxima a vencer en N días.
-   * @param dias Por defecto 30. Incluye vencidas (garantia <= hoy) y próximas (garantia <= hoy + N).
-   */
-  async proximasGarantias(dias = 30) {
-    const hoy = new Date();
-    const limite = new Date(hoy);
-    limite.setDate(hoy.getDate() + Number(dias));
+  async garantiasPorVencer(dias: number) {
+  const d = Number.isFinite(Number(dias)) ? Number(dias) : 30;
 
-    // YYYY-MM-DD
-    const toYmd = (d: Date) => d.toISOString().slice(0, 10);
 
-    const [items, total] = await this.repo.findAndCount({
-      where: {
-        garantia: Between(toYmd(new Date(0)), toYmd(limite)), // cualquier fecha <= limite
-      },
-      relations: { area: true, proveedor: true, empleadoAsignado: true },
-      order: { garantia: 'ASC', codigoInterno: 'ASC' },
-    });
+  const meta = await this.repo.query('SELECT DATABASE() AS db, CURDATE() AS today, NOW() AS now');
 
-    const vencidas = items.filter(e => e.garantia && e.garantia <= toYmd(hoy));
-    const proximas = items.filter(e => e.garantia && e.garantia > toYmd(hoy));
+  const qb = this.repo
+    .createQueryBuilder('e')
+    .select([
+      'e.id AS id',
+      // tu tabla no tiene "nombre", usamos codigo_interno y lo aliaseamos como "nombre"
+      'e.codigo_interno AS nombre',
+      'e.garantia AS venceEl',
+      'DATEDIFF(e.garantia, CURDATE()) AS diasRestantes',
+    ])
+    .where('e.garantia IS NOT NULL')
+    // ✅ Ventana con DATEDIFF para evitar detalles de hora/zona y ser inclusivo
+    .andWhere('DATEDIFF(e.garantia, CURDATE()) BETWEEN 0 AND :dias', { dias: d })
+    .orderBy('e.garantia', 'ASC');
 
-    return {
-      total,
-      vencidas: { total: vencidas.length, items: vencidas },
-      proximas: { total: proximas.length, items: proximas },
-      rango: { desde: '1970-01-01', hasta: toYmd(limite) },
-    };
-  }
+  const rows = await qb.getRawMany<{
+    id: number;
+    nombre: string;   // <- codigo_interno
+    venceEl: string;  // YYYY-MM-DD
+    diasRestantes: number;
+  }>();
+  
+  
+
+  return { ok: true, data: rows };
+}
+
+  
 }

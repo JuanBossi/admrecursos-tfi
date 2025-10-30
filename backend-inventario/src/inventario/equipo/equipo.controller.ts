@@ -3,12 +3,14 @@ import { EquipoService } from './equipo.service';
 import { CreateEquipoDto } from './dto/create-equipo.dto';
 import { UpdateEquipoDto, BajaEquipoDto } from './dto/update-equipo.dto';
 import { QueryEquipoDto } from './dto/query-equipo.dto';
+import { Roles } from '../../acceso/auth/decorators/roles.decorator';
 
 @Controller('equipos')
 export class EquipoController {
   constructor(private readonly service: EquipoService) {}
 
   @Post()
+  @Roles('Administrador', 'Tecnico')
   create(@Body() dto: CreateEquipoDto) {
     return this.service.create(dto);
   }
@@ -18,10 +20,9 @@ export class EquipoController {
     return this.service.findAll(q);
   }
 
-  @Get('alertas/garantia')
-  proximasGarantias(@Query('dias') dias?: string) {
-    const n = dias ? Number(dias) : 30;
-    return this.service.proximasGarantias(Number.isFinite(n) ? n : 30);
+  @Get('garantias')
+  garantias(@Query('dias') dias = 30) {
+    return this.service.garantiasPorVencer(Number(dias) || 30);
   }
 
   @Get(':id')

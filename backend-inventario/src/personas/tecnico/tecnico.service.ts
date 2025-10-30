@@ -5,17 +5,66 @@ import { Tecnico } from './entities/tecnico.entity';
 import { CreateTecnicoDto } from './dto/create-tecnico.dto';
 import { UpdateTecnicoDto } from './dto/update-tecnico.dto';
 import { QueryTecnicoDto } from './dto/query-tecnico.dto';
+import { Usuario } from '../../acceso/usuario/entities/usuario.entity';
+import { Rol } from '../../acceso/rol/entities/rol.entity';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class TecnicoService {
   constructor(
     @InjectRepository(Tecnico)
     private readonly tecnicoRepository: Repository<Tecnico>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(Rol)
+    private readonly rolRepository: Repository<Rol>,
   ) {}
 
   async create(createTecnicoDto: CreateTecnicoDto) {
     const tecnico = this.tecnicoRepository.create(createTecnicoDto);
-    return await this.tecnicoRepository.save(tecnico);
+    const saved = await this.tecnicoRepository.save(tecnico);
+
+    // Crear usuario asociado usando contacto como email/username y dni como password
+    try {
+      const email = (createTecnicoDto.contacto || '').trim();
+      const dni = (createTecnicoDto.dni || '').trim();
+      if (email && dni) {
+        let user: Usuario | null = await this.usuarioRepository.findOne({ where: [{ email }, { username: email }] as any, relations: { roles: true } });
+
+        // Asegurar rol Tecnico
+        let rolTecnico = await this.rolRepository.findOne({ where: { nombre: 'Tecnico' } });
+        if (!rolTecnico) {
+          rolTecnico = await this.rolRepository.save(this.rolRepository.create({ nombre: 'Tecnico' }));
+        }
+
+        const passwordHash = await bcrypt.hash(dni, 10);
+        if (!user) {
+          user = this.usuarioRepository.create({
+            username: email,
+            email,
+            passwordHash,
+            activo: 1 as any,
+            roles: [rolTecnico],
+          } as any) as unknown as Usuario;
+          // Vincular empleado_id al id del t茅cnico seg煤n la convenci贸n del sistema
+          // v韓culo omitido: empleado_id apunta a empleado, no t閏nico
+        } else {
+          // Garantiza rol y estado, y vinculaci贸n
+          const names = (user.roles || []).map(r => r.nombre);
+          if (!names.includes('Tecnico')) user.roles = [...(user.roles || []), rolTecnico];
+          user.activo = 1 as any;
+          if (!(user as any).empleado) // v韓culo omitido: empleado_id apunta a empleado, no t閏nico
+          // No sobreescribo password si ya existe; opcionalmente podr铆as actualizarlo
+          if (!user.passwordHash) user.passwordHash = passwordHash;
+        }
+        await this.usuarioRepository.save(user as Usuario);
+      }
+    } catch (e) {
+      // No romper creaci贸n de t茅cnico si falla la creaci贸n del usuario
+      // console.error('No se pudo crear usuario para t茅cnico:', e);
+    }
+
+    return saved;
   }
 
   async findAll(query: QueryTecnicoDto) {
@@ -70,3 +119,4 @@ export class TecnicoService {
     return { message: 'T茅cnico eliminado correctamente' };
   }
 }
+

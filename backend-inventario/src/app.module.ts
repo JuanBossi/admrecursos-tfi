@@ -1,5 +1,6 @@
 // src/app.module.ts
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DB_LOCAL } from './db.local';
 import { AreaModule } from './catalogos/area/area.module';
@@ -16,6 +17,8 @@ import { HistorialCambiosModule } from './inventario/historial-cambios/historial
 import { RolModule } from './acceso/rol/rol.module';
 import { UsuarioModule } from './acceso/usuario/usuario.module';
 import { AuthModule } from './acceso/auth/auth.module';
+import { AuthGuard } from './acceso/auth/guards/auth.guard';
+import { RolesGuard } from './acceso/auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -34,6 +37,10 @@ import { AuthModule } from './acceso/auth/auth.module';
     RolModule,
     UsuarioModule,
     AuthModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

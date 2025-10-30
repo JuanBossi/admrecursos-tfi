@@ -1,13 +1,15 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { Tecnico } from '../../personas/tecnico/entities/tecnico.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(Usuario) private readonly usuarioRepo: Repository<Usuario>,
+    @InjectRepository(Tecnico) private readonly tecnicoRepo: Repository<Tecnico>,
   ) {}
 
   async login(usernameOrEmail: string, password: string) {
@@ -30,9 +32,26 @@ export class AuthService {
     const tokenPayload = { id: user.id, username: user.username, ts: Date.now() };
     const token = Buffer.from(JSON.stringify(tokenPayload)).toString('base64');
 
+    // Si el usuario es Técnico, resolver técnico usando empleadoId como referencia común
+    const names = (user.roles || []).map((r) => r.nombre);
+    let tecnico: Tecnico | undefined;
+    if (names.includes('Tecnico')) {
+      const id = (user as any).empleado?.id || (user as any).empleadoId;
+      if (id) {
+        const found = await this.tecnicoRepo.findOne({ where: { id: String(id) } });
+        tecnico = found || undefined;
+      } else {
+        const email = (user as any).email || (user as any).username;
+        if (email) {
+          const foundByEmail = await this.tecnicoRepo.findOne({ where: { contacto: String(email) } });
+          tecnico = foundByEmail || undefined;
+        }
+      }
+    }
+
     // No devolver passwordHash
     const { passwordHash, ...safeUser } = user as any;
-    return { user: safeUser, token };
+    return { user: { ...safeUser, ...(tecnico ? { tecnico } : {}) }, token };
   }
 }
 

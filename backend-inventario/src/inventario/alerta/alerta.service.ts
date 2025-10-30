@@ -14,8 +14,14 @@ export class AlertaService {
   ) {}
 
   async create(createAlertaDto: CreateAlertaDto) {
-    const alerta = this.alertaRepository.create(createAlertaDto);
-    return await this.alertaRepository.save(alerta);
+    const alerta = this.alertaRepository.create({
+      mensaje: createAlertaDto.mensaje,
+      ...(createAlertaDto.equipoId
+        ? { equipo: { id: String(createAlertaDto.equipoId) } as any }
+        : {}),
+    });
+    const saved = await this.alertaRepository.save(alerta);
+    return saved;
   }
 
   async findAll(query: QueryAlertaDto) {
@@ -61,9 +67,12 @@ export class AlertaService {
 
   async update(id: string, updateAlertaDto: UpdateAlertaDto) {
     const alerta = await this.findOne(id);
-    
-    Object.assign(alerta, updateAlertaDto);
-    return await this.alertaRepository.save(alerta);
+    if (updateAlertaDto.mensaje !== undefined) alerta.mensaje = updateAlertaDto.mensaje;
+    if (updateAlertaDto.equipoId !== undefined) {
+      alerta.equipo = updateAlertaDto.equipoId ? ({ id: String(updateAlertaDto.equipoId) } as any) : null as any;
+    }
+    const saved = await this.alertaRepository.save(alerta);
+    return saved;
   }
 
   async remove(id: string) {
