@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEquiposList, useEquipoCreate, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoDelete, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
 
 export default function EquiposListPage() {
   const [filtros, setFiltros] = useState({
@@ -11,6 +11,8 @@ export default function EquiposListPage() {
   });
   
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [mostrarPerifs, setMostrarPerifs] = useState({ open: false, equipo: null });
   const [formulario, setFormulario] = useState({
     codigoInterno: '',
     tipo: 'PC',
@@ -28,6 +30,10 @@ export default function EquiposListPage() {
   const { data: empleadosData } = useEmpleados();
   const { data: proveedoresData } = useProveedores();
   const createMutation = useEquipoCreate();
+  const updateMutation = useEquipoUpdate();
+  const deleteMutation = useEquipoDelete();
+  const bajaMutation = useEquipoBaja();
+  const [bajaModal, setBajaModal] = useState({ open: false, equipo: null, motivo: '' });
 
   const equipos = equiposData?.items || [];
   const total = equiposData?.total || 0;
@@ -53,8 +59,13 @@ export default function EquiposListPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createMutation.mutateAsync(formulario);
+      if (editando) {
+        await updateMutation.mutateAsync({ id: editando.id, data: formulario });
+      } else {
+        await createMutation.mutateAsync(formulario);
+      }
       setMostrarModal(false);
+      setEditando(null);
       setFormulario({
         codigoInterno: '',
         tipo: 'PC',
@@ -103,7 +114,7 @@ export default function EquiposListPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Equipos</h1>
         <button
-          onClick={() => setMostrarModal(true)}
+          onClick={() => { setEditando(null); setMostrarModal(true); }}
           style={{
             background: '#3b82f6',
             color: 'white',
@@ -236,7 +247,7 @@ export default function EquiposListPage() {
                     <th>Estado</th>
                     <th>Fecha Compra</th>
                     <th>Garantía</th>
-                    <th>Acciones</th>
+                  <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,6 +297,20 @@ export default function EquiposListPage() {
                               cursor: 'pointer',
                               fontSize: '0.75rem'
                             }}
+                            onClick={() => {
+                              setEditando(equipo);
+                              setFormulario({
+                                codigoInterno: equipo.codigoInterno || '',
+                                tipo: equipo.tipo || 'PC',
+                                proveedorId: equipo.proveedor?.id || '',
+                                areaId: equipo.area?.id || '',
+                                empleadoAsignadoId: equipo.empleadoAsignado?.id || '',
+                                estado: equipo.estado || 'ACTIVO',
+                                fechaCompra: equipo.fechaCompra || '',
+                                garantia: equipo.garantia || '',
+                              });
+                              setMostrarModal(true);
+                            }}
                           >
                             Editar
                           </button>
@@ -299,8 +324,45 @@ export default function EquiposListPage() {
                               cursor: 'pointer',
                               fontSize: '0.75rem'
                             }}
+                            onClick={async () => {
+                              if (window.confirm('¿Eliminar equipo? Esta acción no se puede deshacer.')) {
+                                try {
+                                  await deleteMutation.mutateAsync(equipo.id);
+                                } catch (err) {
+                                  console.error('Error al eliminar equipo:', err);
+                                }
+                              }
+                            }}
                           >
                             Eliminar
+                          </button>
+                          <button
+                            onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
+                            style={{
+                              background: '#fff7ed',
+                              border: '1px solid #fed7aa',
+                              color: '#9a3412',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            Dar de baja
+                          </button>
+                          <button
+                            onClick={() => setMostrarPerifs({ open: true, equipo })}
+                            style={{
+                              background: '#eef2ff',
+                              border: '1px solid #c7d2fe',
+                              color: '#3730a3',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            Ver periféricos
                           </button>
                         </div>
                       </td>
@@ -374,7 +436,7 @@ export default function EquiposListPage() {
             overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Agregar Nuevo Equipo</h2>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{editando ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}</h2>
               <button
                 onClick={() => setMostrarModal(false)}
                 style={{
@@ -590,6 +652,94 @@ export default function EquiposListPage() {
           </div>
         </div>
       )}
+
+      {/* Modal periféricos por equipo */}
+      {mostrarPerifs.open && (
+        <PerifericosDeEquipoModal
+          equipo={mostrarPerifs.equipo}
+          onClose={() => setMostrarPerifs({ open: false, equipo: null })}
+        />
+      )}
+
+      {/* Modal de baja */}
+      {bajaModal.open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setBajaModal({ open: false, equipo: null, motivo: '' })}>
+          <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', width: '90%', maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Dar de baja equipo {bajaModal.equipo?.codigoInterno}</h3>
+            <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+              <span>Motivo de baja</span>
+              <input value={bajaModal.motivo} onChange={(e) => setBajaModal(m => ({ ...m, motivo: e.target.value }))} placeholder="Ej: obsolescencia, falla irreparable, robo…" style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '8px 10px' }} />
+            </label>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button onClick={() => setBajaModal({ open: false, equipo: null, motivo: '' })} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Cancelar</button>
+              <button
+                disabled={bajaMutation.isPending || !bajaModal.motivo.trim()}
+                onClick={async () => {
+                  try {
+                    await bajaMutation.mutateAsync({ id: bajaModal.equipo.id, motivo: bajaModal.motivo.trim() });
+                    setBajaModal({ open: false, equipo: null, motivo: '' });
+                  } catch (err) {
+                    console.error('Error al dar de baja:', err);
+                  }
+                }}
+                style={{ border: 'none', background: '#f97316', color: 'white', borderRadius: 6, padding: '6px 10px', opacity: (bajaMutation.isPending || !bajaModal.motivo.trim()) ? 0.6 : 1 }}
+              >
+                {bajaMutation.isPending ? 'Bajando…' : 'Confirmar baja'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerifericosDeEquipoModal({ equipo, onClose }) {
+  const [page, setPage] = useState(1);
+  const { usePerifericosList } = require('../../core/hooks/usePerifericos');
+  const { data, isLoading, error } = usePerifericosList({ page, limit: 10, equipoId: equipo?.id });
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', width: '90%', maxWidth: 800, maxHeight: '85vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h3 style={{ margin: 0 }}>Periféricos de {equipo?.codigoInterno}</h3>
+          <button onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 8, width: 32, height: 32 }}>✕</button>
+        </div>
+        {isLoading ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Cargando…</div>
+        ) : error ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#b91c1c' }}>{error.message}</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr style={{ background: '#f9fafb' }}>
+                <th>ID</th>
+                <th>Modelo</th>
+                <th>Tipo</th>
+                <th>Marca</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.items || []).map(p => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.modelo || '-'}</td>
+                  <td>{p?.tipo?.nombre || '-'}</td>
+                  <td>{p?.marca?.nombre || '-'}</td>
+                  <td>{p.estado}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+          <button disabled={(data?.page || 1) === 1} onClick={() => setPage(p => p - 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Anterior</button>
+          <span style={{ color: '#6b7280' }}>Página {data?.page || 1}</span>
+          <button disabled={(data?.page || 1) * (data?.limit || 10) >= (data?.total || 0)} onClick={() => setPage(p => p + 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Siguiente</button>
+        </div>
+      </div>
     </div>
   );
 }

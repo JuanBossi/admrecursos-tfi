@@ -30,7 +30,7 @@ export default function PerifericosListPage() {
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
 
-  const { data, isLoading } = usePerifericosList({
+  const { data, isLoading, error } = usePerifericosList({
     page, limit: 10, search,
     estado: estado || undefined,
     tipoId: tipoId || undefined,
@@ -40,7 +40,6 @@ export default function PerifericosListPage() {
   const { data: tipos } = useTiposPeriferico();
   const { data: marcas } = useMarcas();
   const { data: equipos } = useEquiposForSelect();
-  const updateMutation = usePerifericoUpdate();
   const deleteMutation = usePerifericoDelete();
 
   const handleEdit = (periferico) => {
@@ -132,6 +131,8 @@ export default function PerifericosListPage() {
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm">
         {isLoading ? (
           <div className="p-6 text-center text-slate-500">Cargando…</div>
+        ) : error ? (
+          <div className="p-6 text-center text-rose-600">{error.message}</div>
         ) : (
           <>
             <div className="overflow-x-auto">
