@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { TecnicoTipoContrato } from '../entities/tecnico.entity';
 
 export class CreateTecnicoDto {
@@ -17,10 +17,11 @@ export class CreateTecnicoDto {
   @MaxLength(20)
   dni: string;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @IsEmail()
   @MaxLength(180)
-  contacto?: string;
+  contacto: string;
 
   @IsOptional()
   @IsEnum(TecnicoTipoContrato)

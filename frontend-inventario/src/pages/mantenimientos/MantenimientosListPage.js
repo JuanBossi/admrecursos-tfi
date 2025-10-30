@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMantenimientosList, useMantenimientoCreate } from '../../core/hooks/useMantenimientos';
 import { useEquiposForSelect } from '../../core/hooks/usePerifericos';
@@ -6,6 +7,10 @@ import { updateMantenimiento } from '../../core/api/mantenimientos.api';
 import { updateEquipo, darDeBajaEquipo } from '../../core/api/equipos.api';
 
 export default function MantenimientosListPage() {
+  const { user } = useAuth();
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const canManage = isTecnico || isAdmin;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [equipoId, setEquipoId] = useState('');
@@ -65,7 +70,9 @@ export default function MantenimientosListPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Gestion de Mantenimientos</h1>
-        <button onClick={() => setShowCreate(true)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Programar</button>
+        {canManage && (
+          <button onClick={() => setShowCreate(true)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Programar</button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -131,13 +138,13 @@ export default function MantenimientosListPage() {
                     <td>{m.fecha_programada ? new Date(m.fecha_programada).toLocaleDateString() : '-'}</td>
                     <td>{m.descripcion || '-'}</td>
                     <td>
-                      {m.estado === 'PROGRAMADO' && (
+                      {m.estado === 'PROGRAMADO' && canManage && (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button onClick={() => handleEmpezar(m)} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Empezar</button>
                           <button onClick={() => handleCancelar(m)} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Cancelar</button>
                         </div>
                       )}
-                      {m.estado === 'EN PROGRESO' && (
+                      {m.estado === 'EN PROGRESO' && canManage && (
                         <button onClick={() => handleCompletar(m)} style={{ background: '#dcfce7', border: '1px solid #bbf7d0', color: '#166534', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Completar</button>
                       )}
                       {(m.estado === 'COMPLETO' || m.estado === 'CANCELADO') && (
@@ -227,4 +234,3 @@ export default function MantenimientosListPage() {
     </div>
   );
 }
-

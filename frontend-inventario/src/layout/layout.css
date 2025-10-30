@@ -3,7 +3,13 @@
 .sidebar nav a { display:block; color:#cbd5e1; text-decoration:none; margin:.5rem 0; }
 .sidebar nav a.active { color:#fff; font-weight:600; }
 .content { display:flex; flex-direction:column; }
-.topbar { border-bottom:1px solid #e5e7eb; padding: .75rem 1rem; }
+.topbar { border-bottom:1px solid #e5e7eb; padding: .75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+.userbar { display:flex; align-items:center; gap:.75rem; }
+.userinfo { display:flex; align-items:center; gap:.5rem; }
+.username { font-weight:600; color:#111827; }
+.rolebadge { background:#eef2ff; color:#3730a3; padding:.15rem .5rem; border-radius:.375rem; font-size:.85rem; }
+.logoutbtn { background:#ef4444; color:#fff; border:none; padding:.35rem .65rem; border-radius:.375rem; cursor:pointer; font-weight:600; }
+.logoutbtn:hover { background:#dc2626; }
 main { padding: 1rem; }
 .card { border:1px solid #e5e7eb; border-radius: .5rem; padding:1rem; background:#fff; }
 .grid { display:grid; gap:1rem; }

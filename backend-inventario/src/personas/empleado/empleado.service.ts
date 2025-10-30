@@ -5,12 +5,19 @@ import { Empleado } from './entities/empleado.entity';
 import { CreateEmpleadoDto } from './dto/create-empleado.dto';
 import { UpdateEmpleadoDto } from './dto/update-empleado.dto';
 import { QueryEmpleadoDto } from './dto/query-empleado.dto';
+import { Usuario } from '../../acceso/usuario/entities/usuario.entity';
+import { Rol } from '../../acceso/rol/entities/rol.entity';
+import * as bcrypt from 'bcryptjs';
 
 const normalizeDni = (dni: string) => dni.replace(/\D/g, '');
 
 @Injectable()
 export class EmpleadoService {
-  constructor(@InjectRepository(Empleado) private repo: Repository<Empleado>) {}
+  constructor(
+    @InjectRepository(Empleado) private repo: Repository<Empleado>,
+    @InjectRepository(Usuario) private usuarioRepo: Repository<Usuario>,
+    @InjectRepository(Rol) private rolRepo: Repository<Rol>,
+  ) {}
 
   async create(dto: CreateEmpleadoDto) {
     const dni = normalizeDni(dto.dni);
@@ -25,7 +32,45 @@ export class EmpleadoService {
       area: dto.areaId ? ({ id: dto.areaId } as any) : undefined,
     });
 
-    return this.repo.save(empleado);
+    const saved = await this.repo.save(empleado);
+
+    // Crear/actualizar usuario asociado: email = contacto, password = dni, rol Empleado
+    try {
+      const email = (dto.contacto || '').trim();
+      const dniRaw = dto.dni || '';
+      if (email && dniRaw) {
+        let user: Usuario | null = await this.usuarioRepo.findOne({ where: [{ email }, { username: email }] as any, relations: { roles: true, empleado: true } });
+
+        let rolEmpleado = await this.rolRepo.findOne({ where: { nombre: 'Empleado' } });
+        if (!rolEmpleado) {
+          rolEmpleado = await this.rolRepo.save(this.rolRepo.create({ nombre: 'Empleado' }));
+        }
+
+        const passwordHash = await bcrypt.hash(dniRaw.replace(/\D/g, ''), 10);
+        if (!user) {
+          const newUser = this.usuarioRepo.create({
+            username: email,
+            email,
+            passwordHash,
+            activo: 1 as any,
+            roles: [rolEmpleado],
+          } as any);
+          (newUser as any).empleado = { id: saved.id } as any;
+          await this.usuarioRepo.save(newUser);
+        } else {
+          const names = (user.roles || []).map(r => r.nombre);
+          if (!names.includes('Empleado')) user.roles = [...(user.roles || []), rolEmpleado];
+          user.activo = 1 as any;
+          if (!(user as any).empleado?.id) (user as any).empleado = { id: saved.id } as any;
+          if (!user.passwordHash) user.passwordHash = passwordHash;
+          await this.usuarioRepo.save(user);
+        }
+      }
+    } catch (_) {
+      // omitimos error de creación de usuario para no romper alta de empleado
+    }
+
+    return saved;
   }
 
   async findAll(q: QueryEmpleadoDto) {

@@ -1,4 +1,5 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
@@ -11,7 +12,7 @@ export async function fetchPerifericos(q = {}) {
   const url = `${BASE_URL}/perifericos?${params.toString()}`;
   console.log('Fetching perifericos from:', url);
   
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   
   if (!res.ok) {
     const errorText = await res.text();
@@ -39,7 +40,7 @@ export async function fetchPerifericos(q = {}) {
 export async function createPeriferico(payload) {
   const res = await fetch(`${BASE_URL}/perifericos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -57,7 +58,7 @@ export async function updatePeriferico(id, payload) {
   
   const res = await fetch(`${BASE_URL}/perifericos/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   
@@ -78,6 +79,7 @@ export async function updatePeriferico(id, payload) {
 export async function deletePeriferico(id) {
   const res = await fetch(`${BASE_URL}/perifericos/${id}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
   
@@ -91,7 +93,7 @@ export async function deletePeriferico(id) {
 
 // Auxiliares para selects
 export async function fetchTiposPeriferico(params = {}) {
-  const res = await fetch(`${BASE_URL}/tipos-periferico?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/tipos-periferico?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar los tipos de periféricos');
   
   const response = await res.json();
@@ -103,7 +105,7 @@ export async function fetchTiposPeriferico(params = {}) {
 }
 
 export async function fetchMarcas(params = {}) {
-  const res = await fetch(`${BASE_URL}/marcas?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/marcas?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar las marcas');
   
   const response = await res.json();
@@ -115,7 +117,7 @@ export async function fetchMarcas(params = {}) {
 }
 
 export async function fetchEquipos(params = {}) {
-  const res = await fetch(`${BASE_URL}/equipos?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/equipos?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar los equipos');
   
   const response = await res.json();

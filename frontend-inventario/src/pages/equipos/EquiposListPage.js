@@ -191,7 +191,6 @@ export default function EquiposListPage() {
             >
               <option value="">Todos los estados</option>
               <option value="ACTIVO">Activo</option>
-              <option value="INACTIVO">Inactivo</option>
               <option value="REPARACION">En Reparación</option>
               <option value="BAJA">De Baja</option>
             </select>
@@ -539,47 +538,51 @@ export default function EquiposListPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Proveedor
-                  </label>
-                  <select
-                    value={formulario.proveedorId}
-                    onChange={(e) => handleInputChange('proveedorId', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="">Seleccionar proveedor</option>
-                    {proveedoresData?.items?.map(proveedor => (
-                      <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
-                    ))}
-                  </select>
-                </div>
+                {!editando && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      Proveedor
+                    </label>
+                    <select
+                      value={formulario.proveedorId}
+                      onChange={(e) => handleInputChange('proveedorId', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <option value="">Seleccionar proveedor</option>
+                      {proveedoresData?.items?.map(proveedor => (
+                        <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Fecha de Compra
-                  </label>
-                  <input
-                    type="date"
-                    value={formulario.fechaCompra}
-                    onChange={(e) => handleInputChange('fechaCompra', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
+                {!editando && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                      Fecha de Compra
+                    </label>
+                    <input
+                      type="date"
+                      value={formulario.fechaCompra}
+                      onChange={(e) => handleInputChange('fechaCompra', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>

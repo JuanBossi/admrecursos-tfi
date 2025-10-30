@@ -1,4 +1,5 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
@@ -8,7 +9,7 @@ export async function fetchMantenimientos(q = {}) {
     if (v !== undefined && v !== null && v !== '') params.append(k, v);
   });
   const url = `${BASE_URL}/mantenimientos?${params.toString()}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
   // Backend envuelve como { ok: true, data: { items, total, page, limit } }
   const response = await res.json();
@@ -29,7 +30,7 @@ export async function createMantenimiento(payload) {
 
   const res = await fetch(`${BASE_URL}/mantenimientos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -44,7 +45,7 @@ export async function updateMantenimiento(id, payload) {
   };
   const res = await fetch(`${BASE_URL}/mantenimientos/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -55,7 +56,7 @@ export async function updateMantenimiento(id, payload) {
 
 export async function fetchMantenimientosProximos({ dias = 30 } = {}) {
   const url = `${BASE_URL}/mantenimientos/proximos?dias=${encodeURIComponent(dias)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
   const json = await res.json();
   if (json?.ok && Array.isArray(json.data)) return json.data;

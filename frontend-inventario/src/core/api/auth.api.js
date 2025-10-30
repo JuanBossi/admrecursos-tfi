@@ -1,12 +1,14 @@
 import { api } from './client';
 
-// Ajusta el path si tu backend expone otro endpoint
 const LOGIN_PATH = '/auth/login';
 
 export async function loginRequest({ username, password }) {
-  const { data } = await api.post(LOGIN_PATH, { username, password });
-  // Se espera { user, token }
-  return data;
+  const res = await api.post(LOGIN_PATH, { username, password });
+  const payload = res?.data;
+  // Backend con TransformInterceptor: { ok: true, data: { user, token } }
+  if (payload && payload.ok && payload.data) return payload.data;
+  // Fallback por si no estuviera envuelto
+  return payload;
 }
 
 

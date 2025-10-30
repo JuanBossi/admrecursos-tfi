@@ -1,6 +1,6 @@
 import {
   Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne,
-  JoinTable, PrimaryGeneratedColumn, Unique, UpdateDateColumn
+  JoinTable, PrimaryGeneratedColumn, Unique, UpdateDateColumn, RelationId
 } from 'typeorm';
 import { Empleado } from '../../../personas/empleado/entities/empleado.entity';
 import { Rol } from '../../rol/entities/rol.entity';
@@ -24,6 +24,11 @@ export class Usuario {
   @ManyToOne(() => Empleado, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'empleado_id' })
   empleado?: Empleado | null;
+
+  // Si el sistema usa el mismo empleado_id para referir a Técnico cuando el rol es 'Tecnico',
+  // este RelationId nos permite acceder al valor bruto para resolver Técnico manualmente.
+  @RelationId((u: Usuario) => u.empleado)
+  empleadoId?: string;
 
   @Column({ type: 'tinyint', width: 1, default: 1 })
   activo: number; // 1 = activo, 0 = inactivo

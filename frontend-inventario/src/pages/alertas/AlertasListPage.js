@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useAlertasList, useAlertaCreate, useAlertaUpdate, useAlertaDelete } from '../../core/hooks/useAlertas';
 import { useEquiposList } from '../../core/hooks/useEquipos';
 
 export default function AlertasListPage() {
+  const { user } = useAuth();
+  const isEmpleado = !!user?.roles?.some(r => r?.nombre === 'Empleado');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const canCreate = isEmpleado || isTecnico;
+  const isTecnicoOrAdmin = isTecnico || isAdmin;
   const [filtros, setFiltros] = useState({
     search: '',
     page: 1,
@@ -115,6 +122,7 @@ export default function AlertasListPage() {
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Alertas</h1>
+        {canCreate && (
         <button
           onClick={() => {
             setEditando(null);
@@ -136,6 +144,7 @@ export default function AlertasListPage() {
         >
           + Agregar Alerta
         </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -230,6 +239,7 @@ export default function AlertasListPage() {
                       <td>{new Date(alerta.createdAt).toLocaleDateString()}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {isTecnicoOrAdmin && (
                           <button
                             onClick={() => handleEdit(alerta)}
                             style={{
@@ -243,6 +253,8 @@ export default function AlertasListPage() {
                           >
                             Editar
                           </button>
+                          )}
+                          {isTecnicoOrAdmin && (
                           <button
                             onClick={() => handleDelete(alerta.id)}
                             style={{
@@ -257,6 +269,7 @@ export default function AlertasListPage() {
                           >
                             Eliminar
                           </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -1,4 +1,5 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
@@ -11,7 +12,7 @@ export async function fetchAlertas(q = {}) {
   const url = `${BASE_URL}/alertas?${params.toString()}`;
   console.log('Fetching alertas from:', url);
   
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   
   if (!res.ok) {
     const errorText = await res.text();
@@ -39,7 +40,7 @@ export async function fetchAlertas(q = {}) {
 export async function createAlerta(payload) {
   const res = await fetch(`${BASE_URL}/alertas`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -55,7 +56,7 @@ export async function createAlerta(payload) {
 export async function updateAlerta(id, payload) {
   const res = await fetch(`${BASE_URL}/alertas/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -71,6 +72,7 @@ export async function updateAlerta(id, payload) {
 export async function deleteAlerta(id) {
   const res = await fetch(`${BASE_URL}/alertas/${id}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
   

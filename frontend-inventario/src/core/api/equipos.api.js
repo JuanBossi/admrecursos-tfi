@@ -1,4 +1,5 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
@@ -11,7 +12,7 @@ export async function fetchEquipos(q = {}) {
   const url = `${BASE_URL}/equipos?${params.toString()}`;
   console.log('Fetching equipos from:', url);
   
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   
   if (!res.ok) {
     const errorText = await res.text();
@@ -48,7 +49,7 @@ export async function createEquipo(payload) {
   };
   const res = await fetch(`${BASE_URL}/equipos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -73,7 +74,7 @@ export async function updateEquipo(id, payload) {
   };
   const res = await fetch(`${BASE_URL}/equipos/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -83,7 +84,7 @@ export async function updateEquipo(id, payload) {
 }
 
 export async function deleteEquipo(id) {
-  const res = await fetch(`${BASE_URL}/equipos/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${BASE_URL}/equipos/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) throw new Error(await res.text());
   const response = await res.json();
   if (response.ok) return response.data;
@@ -93,7 +94,7 @@ export async function deleteEquipo(id) {
 export async function darDeBajaEquipo(id, motivo) {
   const res = await fetch(`${BASE_URL}/equipos/${id}/baja`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ motivo }),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -104,7 +105,7 @@ export async function darDeBajaEquipo(id, motivo) {
 
 // Auxiliares para selects (ajustá endpoints y mapeos si hace falta)
 export async function fetchAreas() {
-  const res = await fetch(`${BASE_URL}/areas?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/areas?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar las áreas');
   
   const response = await res.json();
@@ -116,7 +117,7 @@ export async function fetchAreas() {
 }
 
 export async function fetchEmpleados() {
-  const res = await fetch(`${BASE_URL}/empleados?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/empleados?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar los empleados');
   
   const response = await res.json();
@@ -128,7 +129,7 @@ export async function fetchEmpleados() {
 }
 
 export async function fetchProveedores() {
-  const res = await fetch(`${BASE_URL}/proveedores?page=1&limit=200`);
+  const res = await fetch(`${BASE_URL}/proveedores?page=1&limit=200`, { headers: authHeaders() });
   if (!res.ok) throw new Error('No se pudieron cargar los proveedores');
   
   const response = await res.json();
@@ -140,7 +141,7 @@ export async function fetchProveedores() {
 }
 
 export async function fetchGarantiasPorVencer({ dias = 30 } = {}) {
-  const res = await fetch(`${BASE_URL}/equipos/garantias?dias=${encodeURIComponent(dias)}`);
+  const res = await fetch(`${BASE_URL}/equipos/garantias?dias=${encodeURIComponent(dias)}`, { headers: authHeaders() });
 
   // 1) Axios -> res.data; fetch -> await res.json()
   let payload = res && typeof res === 'object' ? res.data : undefined;

@@ -1,31 +1,32 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
 export async function fetchEstadisticas() {
   try {
     // Obtener estadísticas de equipos
-    const equiposRes = await fetch(`${BASE_URL}/equipos?limit=1000`);
+    const equiposRes = await fetch(`${BASE_URL}/equipos?limit=1000`, { headers: authHeaders() });
     const equiposData = await equiposRes.json();
     const equipos = equiposData.ok ? equiposData.data.items : [];
 
     // Obtener estadísticas de alertas
-    const alertasRes = await fetch(`${BASE_URL}/alertas?limit=1000`);
+    const alertasRes = await fetch(`${BASE_URL}/alertas?limit=1000`, { headers: authHeaders() });
     const alertasData = await alertasRes.json();
     const alertas = alertasData.ok ? alertasData.data.items : [];
 
     // Obtener estadísticas de mantenimientos
-    const mantenimientosRes = await fetch(`${BASE_URL}/mantenimientos?limit=1000`);
+    const mantenimientosRes = await fetch(`${BASE_URL}/mantenimientos?limit=1000`, { headers: authHeaders() });
     const mantenimientosData = await mantenimientosRes.json();
     const mantenimientos = mantenimientosData.ok ? mantenimientosData.data.items : [];
 
     // Obtener estadísticas de técnicos
-    const tecnicosRes = await fetch(`${BASE_URL}/tecnicos?limit=1000`);
+    const tecnicosRes = await fetch(`${BASE_URL}/tecnicos?limit=1000`, { headers: authHeaders() });
     const tecnicosData = await tecnicosRes.json();
     const tecnicos = tecnicosData.ok ? tecnicosData.data.items : [];
 
     // Obtener estadísticas de usuarios con roles
-    const usuariosRes = await fetch(`${BASE_URL}/usuarios?limit=1000`);
+    const usuariosRes = await fetch(`${BASE_URL}/usuarios?limit=1000`, { headers: authHeaders() });
     const usuariosData = await usuariosRes.json();
     const usuarios = usuariosData.ok ? usuariosData.data.items : [];
 
@@ -44,6 +45,7 @@ export async function fetchEstadisticas() {
       },
       alertas: {
         total: alertas.length,
+        activas: alertas.length, // sin campo de estado, consideramos vigentes todas las no eliminadas
         recientes: alertas.filter(a => {
           const fecha = new Date(a.createdAt);
           const hace7Dias = new Date();

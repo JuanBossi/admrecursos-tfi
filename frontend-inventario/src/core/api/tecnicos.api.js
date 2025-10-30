@@ -1,4 +1,5 @@
 import { API_URL } from '../../config/env.js';
+import { authHeaders } from './client';
 
 const BASE_URL = API_URL;
 
@@ -11,7 +12,7 @@ export async function fetchTecnicos(q = {}) {
   const url = `${BASE_URL}/tecnicos?${params.toString()}`;
   console.log('Fetching tecnicos from:', url);
   
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   
   if (!res.ok) {
     const errorText = await res.text();
@@ -39,7 +40,7 @@ export async function fetchTecnicos(q = {}) {
 export async function createTecnico(payload) {
   const res = await fetch(`${BASE_URL}/tecnicos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -55,7 +56,7 @@ export async function createTecnico(payload) {
 export async function updateTecnico(id, payload) {
   const res = await fetch(`${BASE_URL}/tecnicos/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -71,6 +72,7 @@ export async function updateTecnico(id, payload) {
 export async function deleteTecnico(id) {
   const res = await fetch(`${BASE_URL}/tecnicos/${id}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
   
