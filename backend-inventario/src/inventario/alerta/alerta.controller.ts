@@ -10,7 +10,7 @@ export class AlertaController {
   constructor(private readonly service: AlertaService) {}
 
   @Post()
-  @Roles('Empleado', 'Tecnico')
+  @Roles('Empleado', 'Tecnico', 'Administrador')
   create(@Body() dto: CreateAlertaDto) {
     return this.service.create(dto);
   }
