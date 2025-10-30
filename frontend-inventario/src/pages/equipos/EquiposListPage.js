@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoDelete, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
 
 export default function EquiposListPage() {
   const [filtros, setFiltros] = useState({
@@ -12,6 +12,7 @@ export default function EquiposListPage() {
   
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [formError, setFormError] = useState('');
   const [mostrarPerifs, setMostrarPerifs] = useState({ open: false, equipo: null });
   const [formulario, setFormulario] = useState({
     codigoInterno: '',
@@ -31,7 +32,6 @@ export default function EquiposListPage() {
   const { data: proveedoresData } = useProveedores();
   const createMutation = useEquipoCreate();
   const updateMutation = useEquipoUpdate();
-  const deleteMutation = useEquipoDelete();
   const bajaMutation = useEquipoBaja();
   const [bajaModal, setBajaModal] = useState({ open: false, equipo: null, motivo: '' });
 
@@ -76,8 +76,17 @@ export default function EquiposListPage() {
         fechaCompra: '',
         garantia: ''
       });
+      setFormError('');
     } catch (error) {
-      console.error('Error al crear equipo:', error);
+      let msg = 'Error al guardar equipo';
+      try {
+        // Algunos errores vienen con response.text como JSON string
+        const parsed = JSON.parse(error.message);
+        if (parsed?.message) msg = parsed.message;
+      } catch (_) {
+        if (error?.message) msg = String(error.message);
+      }
+      setFormError(msg);
     }
   };
 
@@ -282,6 +291,11 @@ export default function EquiposListPage() {
                         }}>
                           {equipo.estado}
                         </span>
+                        {equipo.estado === 'BAJA' && equipo.motivoBaja && (
+                          <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#991b1b' }}>
+                            Motivo: {equipo.motivoBaja}
+                          </div>
+                        )}
                       </td>
                       <td>{equipo.fechaCompra ? new Date(equipo.fechaCompra).toLocaleDateString() : '-'}</td>
                       <td>{equipo.garantia ? new Date(equipo.garantia).toLocaleDateString() : '-'}</td>
@@ -313,28 +327,7 @@ export default function EquiposListPage() {
                           >
                             Editar
                           </button>
-                          <button
-                            style={{
-                              background: '#fee2e2',
-                              border: '1px solid #fecaca',
-                              color: '#991b1b',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                            onClick={async () => {
-                              if (window.confirm('¿Eliminar equipo? Esta acción no se puede deshacer.')) {
-                                try {
-                                  await deleteMutation.mutateAsync(equipo.id);
-                                } catch (err) {
-                                  console.error('Error al eliminar equipo:', err);
-                                }
-                              }
-                            }}
-                          >
-                            Eliminar
-                          </button>
+                          {equipo.estado !== 'BAJA' && (
                           <button
                             onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
                             style={{
@@ -349,6 +342,7 @@ export default function EquiposListPage() {
                           >
                             Dar de baja
                           </button>
+                          )}
                           <button
                             onClick={() => setMostrarPerifs({ open: true, equipo })}
                             style={{
@@ -451,6 +445,11 @@ export default function EquiposListPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              {formError && (
+                <div style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '8px 10px', borderRadius: 6, marginBottom: 12, fontSize: 14 }}>
+                  {formError}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
@@ -460,6 +459,8 @@ export default function EquiposListPage() {
                     type="text"
                     value={formulario.codigoInterno}
                     onChange={(e) => handleInputChange('codigoInterno', e.target.value)}
+                    disabled={!!editando}
+                    readOnly={!!editando}
                     required
                     placeholder="Ej: EQ-0001"
                     style={{
