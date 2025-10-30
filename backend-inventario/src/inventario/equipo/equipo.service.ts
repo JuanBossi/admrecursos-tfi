@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, FindOptionsWhere, ILike, LessThanOrEqual, Repository } from 'typeorm';
 import { Equipo, EquipoEstado, EquipoTipo } from './entities/equipo.entity';
@@ -15,6 +15,9 @@ export class EquipoService {
   ) {}
 
   async create(dto: CreateEquipoDto) {
+    // Validación de unicidad de código interno con mensaje claro
+    const exists = await this.repo.exists({ where: { codigoInterno: dto.codigoInterno } });
+    if (exists) throw new BadRequestException('Ya existe un equipo con ese código interno');
     const equipo = this.repo.create({
       codigoInterno: dto.codigoInterno,
       tipo: dto.tipo,
@@ -62,6 +65,15 @@ export class EquipoService {
 
   async update(id: string, dto: UpdateEquipoDto) {
     const equipo = await this.findOne(id);
+
+    // Si intenta cambiar el código interno, validar que no esté usado por otro
+    if (dto.codigoInterno !== undefined) {
+      const nuevo = dto.codigoInterno;
+      if (nuevo !== equipo.codigoInterno) {
+        const dup = await this.repo.exists({ where: { codigoInterno: nuevo } });
+        if (dup) throw new BadRequestException('Ya existe un equipo con ese código interno');
+      }
+    }
 
     if (dto.proveedorId !== undefined) {
       (equipo as any).proveedor = dto.proveedorId ? ({ id: dto.proveedorId } as any) : null;
