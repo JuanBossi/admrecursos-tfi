@@ -16,6 +16,10 @@ export class QueryMantenimientoDto {
   search?: string;
 
   @IsOptional()
+  @IsString()
+  equipoId?: string;
+
+  @IsOptional()
   @IsEnum(EstadoMantenimiento)
   estado?: EstadoMantenimiento;
 }

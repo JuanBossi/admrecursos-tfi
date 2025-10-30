@@ -561,26 +561,7 @@ export default function EquiposListPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Estado
-                  </label>
-                  <select
-                    value={formulario.estado}
-                    onChange={(e) => handleInputChange('estado', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="ACTIVO">Activo</option>
-                    <option value="REPARACION">En Reparación</option>
-                    <option value="BAJA">De Baja</option>
-                  </select>
-                </div>
+                
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>

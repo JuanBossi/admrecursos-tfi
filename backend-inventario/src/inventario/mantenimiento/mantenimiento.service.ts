@@ -35,7 +35,7 @@ export class MantenimientoService {
 
 
   async findAll(query: QueryMantenimientoDto) {
-    const { page = 1, limit = 10, search, estado } = query;
+    const { page = 1, limit = 10, search, estado, equipoId } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.mantenimientoRepository.createQueryBuilder('mantenimiento')
@@ -53,6 +53,10 @@ export class MantenimientoService {
 
     if (estado) {
       queryBuilder.andWhere('mantenimiento.estado = :estado', { estado });
+    }
+
+    if (equipoId) {
+      queryBuilder.andWhere('equipo.id = :equipoId', { equipoId: String(equipoId) });
     }
 
     const [items, total] = await queryBuilder
@@ -143,6 +147,6 @@ export class MantenimientoService {
       .orderBy('m.fecha_programada', 'ASC');
 
     const rows = await qb.getRawMany();
-    return { ok: true, data: rows };
+    return rows;
   }
 }
