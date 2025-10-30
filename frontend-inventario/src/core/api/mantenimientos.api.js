@@ -38,6 +38,21 @@ export async function createMantenimiento(payload) {
   throw new Error('Error al crear el mantenimiento');
 }
 
+export async function updateMantenimiento(id, payload) {
+  const body = {
+    ...payload,
+  };
+  const res = await fetch(`${BASE_URL}/mantenimientos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const response = await res.json();
+  if (response.ok && response.data) return response.data;
+  throw new Error('Error al actualizar el mantenimiento');
+}
+
 export async function fetchMantenimientosProximos({ dias = 30 } = {}) {
   const url = `${BASE_URL}/mantenimientos/proximos?dias=${encodeURIComponent(dias)}`;
   const res = await fetch(url);
