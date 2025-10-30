@@ -1,7 +1,13 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { exportToCSV, exportToPrintablePDF, formatDate } from '../../utils/export';
 
 export default function EquiposListPage() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const canAdd = isAdmin || isTecnico;
   const [filtros, setFiltros] = useState({
     search: '',
     areaId: '',
@@ -122,20 +128,22 @@ export default function EquiposListPage() {
       {/* Header con título y botón de agregar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Equipos</h1>
-        <button
-          onClick={() => { setEditando(null); setMostrarModal(true); }}
-          style={{
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
-        >
-          + Agregar Equipo
-        </button>
+        {canAdd && (
+          <button
+            onClick={() => { setEditando(null); setMostrarModal(true); }}
+            style={{
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            + Agregar Equipo
+          </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -235,6 +243,60 @@ export default function EquiposListPage() {
           <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
             Equipos ({total})
           </h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => {
+                const headers = [
+                  { key: 'codigoInterno', label: 'Código Interno' },
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'area', label: 'Área' },
+                  { key: 'asignado', label: 'Asignado a' },
+                  { key: 'estado', label: 'Estado' },
+                  { key: 'fechaCompra', label: 'Fecha Compra' },
+                  { key: 'garantia', label: 'Garantía' },
+                ];
+                const rows = (equipos || []).map(e => ({
+                  codigoInterno: e?.codigoInterno || '',
+                  tipo: e?.tipo || '',
+                  area: e?.area?.nombre || '',
+                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                  estado: e?.estado || '',
+                  fechaCompra: formatDate(e?.fechaCompra),
+                  garantia: formatDate(e?.garantia),
+                }));
+                exportToCSV('equipos', headers, rows);
+              }}
+              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+            >
+              Exportar Excel
+            </button>
+            <button
+              onClick={() => {
+                const headers = [
+                  { key: 'codigoInterno', label: 'Código Interno' },
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'area', label: 'Área' },
+                  { key: 'asignado', label: 'Asignado a' },
+                  { key: 'estado', label: 'Estado' },
+                  { key: 'fechaCompra', label: 'Fecha Compra' },
+                  { key: 'garantia', label: 'Garantía' },
+                ];
+                const rows = (equipos || []).map(e => ({
+                  codigoInterno: e?.codigoInterno || '',
+                  tipo: e?.tipo || '',
+                  area: e?.area?.nombre || '',
+                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                  estado: e?.estado || '',
+                  fechaCompra: formatDate(e?.fechaCompra),
+                  garantia: formatDate(e?.garantia),
+                }));
+                exportToPrintablePDF('Listado de Equipos', headers, rows);
+              }}
+              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+            >
+              Exportar PDF
+            </button>
+          </div>
         </div>
 
         {equipos.length === 0 ? (
@@ -262,11 +324,8 @@ export default function EquiposListPage() {
                   {equipos.map(equipo => (
                     <tr key={equipo.id}>
                       <td>
-                        <div>
-                          <div style={{ fontWeight: '500' }}>{equipo.codigoInterno}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                            {equipo.tipo}
-                          </div>
+                        <div style={{ fontWeight: '500' }}>
+                          {equipo.codigoInterno}
                         </div>
                       </td>
                       <td>{equipo.tipo || '-'}</td>
@@ -327,7 +386,7 @@ export default function EquiposListPage() {
                           >
                             Editar
                           </button>
-                          {equipo.estado !== 'BAJA' && (
+                          {equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
                           <button
                             onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
                             style={{
@@ -556,11 +615,11 @@ export default function EquiposListPage() {
                       }}
                     >
                       <option value="">Seleccionar proveedor</option>
-                      {proveedoresData?.items?.map(proveedor => (
-                        <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
+                    {proveedoresData?.items?.map(proveedor => (
+                      <option key={proveedor.id} value={proveedor.id}>{proveedor.razonSocial || proveedor.nombre || proveedor.cuit}</option>
+                    ))}
+                  </select>
+                </div>
                 )}
 
                 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../core/auth/AuthContext';
 import {
   usePerifericosList,
   usePerifericoCreate,
@@ -8,8 +9,13 @@ import {
   useMarcas,
   useEquiposForSelect,
 } from '../../core/hooks/usePerifericos';
+import { exportToCSV, exportToPrintablePDF } from '../../utils/export';
 
 export default function PerifericosListPage() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const canAdd = isAdmin || isTecnico;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
@@ -58,7 +64,77 @@ export default function PerifericosListPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Gestion de Perifericos</h1>
-        <button onClick={() => { setEditando(null); setOpen(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Agregar periferico</button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'modelo', label: 'Modelo' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'marca', label: 'Marca' },
+                { key: 'equipo', label: 'Equipo' },
+                { key: 'especificaciones', label: 'Especificaciones' },
+              ];
+              const rows = (items || []).map(p => ({
+                id: p?.id ?? '',
+                modelo: p?.modelo || '',
+                tipo: p?.tipo?.nombre || '',
+                marca: p?.marca?.nombre || '',
+                equipo: p?.equipo?.codigoInterno || '',
+                especificaciones: (() => {
+                  const raw = p?.especificaciones;
+                  try {
+                    if (!raw) return '';
+                    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+                      const label = (k) => String(k).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                      return Object.entries(obj).map(([k, v]) => `${label(k)}: ${Array.isArray(v) ? v.join(', ') : String(v)}`).join(' | ');
+                    }
+                  } catch(_){}
+                  return String(raw || '');
+                })(),
+              }));
+              exportToCSV('perifericos', headers, rows);
+            }}
+            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+          >Exportar Excel</button>
+          <button
+            onClick={() => {
+              const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'modelo', label: 'Modelo' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'marca', label: 'Marca' },
+                { key: 'equipo', label: 'Equipo' },
+                { key: 'especificaciones', label: 'Especificaciones' },
+              ];
+              const rows = (items || []).map(p => ({
+                id: p?.id ?? '',
+                modelo: p?.modelo || '',
+                tipo: p?.tipo?.nombre || '',
+                marca: p?.marca?.nombre || '',
+                equipo: p?.equipo?.codigoInterno || '',
+                especificaciones: (() => {
+                  const raw = p?.especificaciones;
+                  try {
+                    if (!raw) return '';
+                    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+                      const label = (k) => String(k).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                      return Object.entries(obj).map(([k, v]) => `${label(k)}: ${Array.isArray(v) ? v.join(', ') : String(v)}`).join(' | ');
+                    }
+                  } catch(_){}
+                  return String(raw || '');
+                })(),
+              }));
+              exportToPrintablePDF('Listado de Periféricos', headers, rows);
+            }}
+            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+          >Exportar PDF</button>
+          {canAdd && (
+            <button onClick={() => { setEditando(null); setOpen(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Agregar periferico</button>
+          )}
+        </div>
       </div>
 
       {/* Filtros */}

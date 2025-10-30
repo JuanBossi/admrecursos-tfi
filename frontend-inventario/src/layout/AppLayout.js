@@ -15,6 +15,7 @@ export default function AppLayout() {
     ? user.roles.map((r) => r?.nombre).filter(Boolean).join(', ')
     : 'Sin rol';
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
+  const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
 
   return (
     <div className="app-shell">
@@ -26,6 +27,7 @@ export default function AppLayout() {
           <NavLink to="/mantenimientos">Mantenimientos</NavLink>
           <NavLink to="/perifericos">Periféricos</NavLink>
           <NavLink to="/alertas">Alertas</NavLink>
+          {(isAdmin || isTecnico) && <NavLink to="/proveedores">Proveedores</NavLink>}
           {isAdmin && <NavLink to="/empleados">Empleados</NavLink>}
           {isAdmin && <NavLink to="/tecnicos">Técnicos</NavLink>}
         </nav>

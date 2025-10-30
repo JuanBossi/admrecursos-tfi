@@ -5,6 +5,7 @@ import { useMantenimientosList, useMantenimientoCreate } from '../../core/hooks/
 import { useEquiposForSelect } from '../../core/hooks/usePerifericos';
 import { updateMantenimiento } from '../../core/api/mantenimientos.api';
 import { updateEquipo, darDeBajaEquipo } from '../../core/api/equipos.api';
+import { exportToCSV, exportToPrintablePDF, formatDate } from '../../utils/export';
 
 export default function MantenimientosListPage() {
   const { user } = useAuth();
@@ -70,9 +71,55 @@ export default function MantenimientosListPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Gestion de Mantenimientos</h1>
-        {canManage && (
-          <button onClick={() => setShowCreate(true)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Programar</button>
-        )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'equipo', label: 'Equipo' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'estado', label: 'Estado' },
+                { key: 'fecha', label: 'Fecha' },
+                { key: 'descripcion', label: 'Descripcion' },
+              ];
+              const rows = (items || []).map(m => ({
+                id: m?.id ?? '',
+                equipo: m?.equipo?.codigoInterno || '',
+                tipo: m?.tipo || '',
+                estado: m?.estado || '',
+                fecha: formatDate(m?.fecha_programada),
+                descripcion: m?.descripcion || '',
+              }));
+              exportToCSV('mantenimientos', headers, rows);
+            }}
+            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+          >Exportar Excel</button>
+          <button
+            onClick={() => {
+              const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'equipo', label: 'Equipo' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'estado', label: 'Estado' },
+                { key: 'fecha', label: 'Fecha' },
+                { key: 'descripcion', label: 'Descripcion' },
+              ];
+              const rows = (items || []).map(m => ({
+                id: m?.id ?? '',
+                equipo: m?.equipo?.codigoInterno || '',
+                tipo: m?.tipo || '',
+                estado: m?.estado || '',
+                fecha: formatDate(m?.fecha_programada),
+                descripcion: m?.descripcion || '',
+              }));
+              exportToPrintablePDF('Listado de Mantenimientos', headers, rows);
+            }}
+            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+          >Exportar PDF</button>
+          {canManage && (
+            <button onClick={() => setShowCreate(true)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Programar</button>
+          )}
+        </div>
       </div>
 
       {/* Filtros */}

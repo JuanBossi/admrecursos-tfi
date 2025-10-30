@@ -8,6 +8,7 @@ import AlertasListPage from '../pages/alertas/AlertasListPage';
 import PerifericosListPage from '../pages/perifericos/PerifericosListPage';
 import TecnicosListPage from '../pages/tecnicos/TecnicosListPage';
 import EmpleadosListPage from '../pages/empleados/EmpleadosListPage';
+import ProveedoresListPage from '../pages/proveedores/ProveedoresListPage';
 import LoginPage from '../pages/usuarios/loginpage';
 import { useAuth } from '../core/auth/AuthContext';
 
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'perifericos', element: <PerifericosListPage /> },
       { path: 'alertas', element: <AlertasListPage /> },
       { path: 'empleados', element: <EmpleadosListPage /> },
+      { path: 'proveedores', element: <ProveedoresListPage /> },
       { path: 'tecnicos', element: <TecnicosListPage /> },
     ],
   },
