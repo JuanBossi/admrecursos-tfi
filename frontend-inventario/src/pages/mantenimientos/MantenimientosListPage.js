@@ -119,28 +119,45 @@ export default function MantenimientosListPage() {
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar (descripcion, equipo, tecnico)" style={{ width: 220, border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', fontSize: 14 }} />
-        <select value={equipoId} onChange={(e) => setEquipoId(e.target.value)} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', background: 'white' }}>
-          <option value="">Equipo (todos)</option>
-          {(equipos || []).map(eq => <option key={eq.id} value={eq.id}>{eq.codigoInterno}</option>)}
-        </select>
-        <select value={estado} onChange={(e) => setEstado(e.target.value)} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', background: 'white' }}>
-          <option value="">Estado (todos)</option>
-          <option value="PROGRAMADO">PROGRAMADO</option>
-          <option value="EN PROGRESO">EN PROGRESO</option>
-          <option value="COMPLETO">COMPLETO</option>
-          <option value="CANCELADO">CANCELADO</option>
-        </select>
-        <button onClick={() => setPage(1)} style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Filtrar</button>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151' }}>
-          <span>Mostrar por pagina</span>
-          <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', background: 'white' }}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Filtros</h3>
+        <div className="filters-grid">
+          <div>
+            <label className="form-label">Buscar</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Descripción, equipo, técnico"
+              className="input"
+            />
+          </div>
+          <div>
+            <label className="form-label">Equipo</label>
+            <select value={equipoId} onChange={(e) => setEquipoId(e.target.value)} className="select">
+              <option value="">Todos</option>
+              {(equipos || []).map(eq => <option key={eq.id} value={eq.id}>{eq.codigoInterno}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Estado</label>
+            <select value={estado} onChange={(e) => setEstado(e.target.value)} className="select">
+              <option value="">Todos</option>
+              <option value="PROGRAMADO">PROGRAMADO</option>
+              <option value="EN PROGRESO">EN PROGRESO</option>
+              <option value="COMPLETO">COMPLETO</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Mostrar por página</label>
+            <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} className="select">
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -183,12 +200,12 @@ export default function MantenimientosListPage() {
                     <td>
                       {m.estado === 'PROGRAMADO' && canManage && (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button onClick={() => handleEmpezar(m)} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Empezar</button>
-                          <button onClick={() => handleCancelar(m)} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Cancelar</button>
+                          <button onClick={() => handleEmpezar(m)} className="btn btn-info-soft btn-sm">Empezar</button>
+                          <button onClick={() => handleCancelar(m)} className="btn btn-danger-soft btn-sm">Cancelar</button>
                         </div>
                       )}
                       {m.estado === 'EN PROGRESO' && canManage && (
-                        <button onClick={() => handleCompletar(m)} style={{ background: '#dcfce7', border: '1px solid #bbf7d0', color: '#166534', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Completar</button>
+                        <button onClick={() => handleCompletar(m)} className="btn btn-primary btn-sm">Completar</button>
                       )}
                       {(m.estado === 'COMPLETO' || m.estado === 'CANCELADO') && (
                         <span style={{ color: '#64748b', fontSize: 12 }}>Sin acciones</span>
@@ -243,8 +260,8 @@ export default function MantenimientosListPage() {
                 <textarea rows={3} required value={form.descripcion} onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', resize: 'vertical' }} />
               </label>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <button type="button" onClick={() => setShowCreate(false)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Cancelar</button>
-                <button type="submit" disabled={createMut.isPending} style={{ border: 'none', background: '#3b82f6', color: 'white', borderRadius: 6, padding: '6px 10px', opacity: createMut.isPending ? 0.6 : 1 }}>{createMut.isPending ? 'Guardando…' : 'Guardar'}</button>
+                <button type="button" onClick={() => setShowCreate(false)} className="btn btn-outline">Cancelar</button>
+                <button type="submit" disabled={createMut.isPending} className="btn btn-primary">{createMut.isPending ? 'Guardando…' : 'Guardar'}</button>
               </div>
             </form>
           </div>
@@ -268,8 +285,8 @@ export default function MantenimientosListPage() {
               </label>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-              <button onClick={() => setCompletarModal({ open: false, mant: null, decision: 'ACTIVO', motivo: '' })} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Cancelar</button>
-              <button disabled={updateMantMut.isPending || updateEquipoMut.isPending || bajaEquipoMut.isPending || (completarModal.decision === 'BAJA' && !completarModal.motivo.trim())} onClick={confirmarCompletar} style={{ border: 'none', background: '#3b82f6', color: 'white', borderRadius: 6, padding: '6px 10px', opacity: (updateMantMut.isPending || updateEquipoMut.isPending || bajaEquipoMut.isPending || (completarModal.decision === 'BAJA' && !completarModal.motivo.trim())) ? 0.6 : 1, cursor: 'pointer' }}>{updateMantMut.isPending || updateEquipoMut.isPending || bajaEquipoMut.isPending ? 'Aplicando…' : 'Confirmar'}</button>
+              <button onClick={() => setCompletarModal({ open: false, mant: null, decision: 'ACTIVO', motivo: '' })} className="btn btn-outline">Cancelar</button>
+              <button disabled={updateMantMut.isPending || updateEquipoMut.isPending || bajaEquipoMut.isPending || (completarModal.decision === 'BAJA' && !completarModal.motivo.trim())} onClick={confirmarCompletar} className="btn btn-primary">{updateMantMut.isPending || updateEquipoMut.isPending || bajaEquipoMut.isPending ? 'Aplicando…' : 'Confirmar'}</button>
             </div>
           </div>
         </div>

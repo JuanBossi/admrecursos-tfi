@@ -83,19 +83,20 @@ export default function ProveedoresListPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Proveedores</h1>
         {canManage && (
-          <button onClick={() => { setEditando(null); setForm({ razonSocial: '', cuit: '', contacto: '', email: '', telefono: '', direccion: '' }); setMostrarModal(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Agregar</button>
+          <button onClick={() => { setEditando(null); setForm({ razonSocial: '', cuit: '', contacto: '', email: '', telefono: '', direccion: '' }); setMostrarModal(true); }} className="btn btn-primary">+ Agregar</button>
         )}
       </div>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Filtros</h3>
+        <div className="filters-grid">
           <div>
-            <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Buscar</label>
-            <input value={filtros.search} onChange={(e) => setFiltros(s => ({ ...s, search: e.target.value, page: 1 }))} placeholder="Razón social, CUIT, contacto" style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
+            <label className="form-label">Buscar</label>
+            <input value={filtros.search} onChange={(e) => setFiltros(s => ({ ...s, search: e.target.value, page: 1 }))} placeholder="Razón social, CUIT, contacto" className="input" />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Mostrar</label>
-            <select value={filtros.limit} onChange={(e) => setFiltros(s => ({ ...s, limit: parseInt(e.target.value), page: 1 }))} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+            <label className="form-label">Mostrar</label>
+            <select value={filtros.limit} onChange={(e) => setFiltros(s => ({ ...s, limit: parseInt(e.target.value), page: 1 }))} className="select">
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -112,7 +113,7 @@ export default function ProveedoresListPage() {
         ) : items.length === 0 ? (
           <p style={{ color: '#6b7280' }}>Sin resultados</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr style={{ background: '#f9fafb' }}>
@@ -153,10 +154,10 @@ export default function ProveedoresListPage() {
       </div>
 
       {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12 }}>
-          <button onClick={() => setFiltros(s => ({ ...s, page: Math.max(1, s.page - 1) }))} disabled={filtros.page === 1} style={{ padding: '0.5rem', border: '1px solid #d1d5db', background: filtros.page === 1 ? '#f9fafb' : 'white', borderRadius: 4 }}>Anterior</button>
-          <span style={{ color: '#6b7280' }}>Página {filtros.page} de {totalPages}</span>
-          <button onClick={() => setFiltros(s => ({ ...s, page: Math.min(totalPages, s.page + 1) }))} disabled={filtros.page === totalPages} style={{ padding: '0.5rem', border: '1px solid #d1d5db', background: filtros.page === totalPages ? '#f9fafb' : 'white', borderRadius: 4 }}>Siguiente</button>
+        <div className="pagination">
+          <button onClick={() => setFiltros(s => ({ ...s, page: Math.max(1, s.page - 1) }))} disabled={filtros.page === 1} className="btn btn-outline">Anterior</button>
+          <span className="page-info">Página {filtros.page} de {totalPages}</span>
+          <button onClick={() => setFiltros(s => ({ ...s, page: Math.min(totalPages, s.page + 1) }))} disabled={filtros.page === totalPages} className="btn btn-outline">Siguiente</button>
         </div>
       )}
 
@@ -195,8 +196,8 @@ export default function ProveedoresListPage() {
                 <input value={form.direccion} onChange={(e) => setForm(f => ({ ...f, direccion: e.target.value }))} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
               </label>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button type="button" onClick={() => setMostrarModal(false)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Cancelar</button>
-                <button type="submit" disabled={createMut.isPending || updateMut.isPending} style={{ border: 'none', background: '#3b82f6', color: 'white', borderRadius: 6, padding: '6px 10px' }}>{(createMut.isPending || updateMut.isPending) ? 'Guardando…' : 'Guardar'}</button>
+                <button type="button" onClick={() => setMostrarModal(false)} className="btn btn-outline">Cancelar</button>
+                <button type="submit" disabled={createMut.isPending || updateMut.isPending} className="btn btn-primary">{(createMut.isPending || updateMut.isPending) ? 'Guardando…' : 'Guardar'}</button>
               </div>
             </form>
           </div>
@@ -205,3 +206,4 @@ export default function ProveedoresListPage() {
     </div>
   );
 }
+

@@ -67,6 +67,7 @@ export default function PerifericosListPage() {
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Gestion de Perifericos</h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
+            className="btn btn-outline"
             onClick={() => {
               const headers = [
                 { key: 'id', label: 'ID' },
@@ -100,6 +101,7 @@ export default function PerifericosListPage() {
             style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
           >Exportar Excel</button>
           <button
+            className="btn btn-outline"
             onClick={() => {
               const headers = [
                 { key: 'id', label: 'ID' },
@@ -130,34 +132,45 @@ export default function PerifericosListPage() {
               }));
               exportToPrintablePDF('Listado de Periféricos', headers, rows);
             }}
-            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
           >Exportar PDF</button>
           {canAdd && (
-            <button onClick={() => { setEditando(null); setOpen(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Agregar periferico</button>
+            <button onClick={() => { setEditando(null); setOpen(true); }} className="btn btn-primary">+ Agregar periferico</button>
           )}
         </div>
       </div>
 
       {/* Filtros */}
-      <div style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-          <input placeholder="Buscar por modelo" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220, border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', fontSize: 14 }} />
-          <select value={tipoId} onChange={(e) => setTipoId(e.target.value)} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', background: 'white' }}>
-            <option value="">Tipo (todos)</option>
-            {(tipos || []).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-          </select>
-          <select value={marcaId} onChange={(e) => setMarcaId(e.target.value)} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', background: 'white' }}>
-            <option value="">Marca (todas)</option>
-            {(marcas || []).map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-          </select>
-          <select value={equipoId} onChange={(e) => setEquipoId(e.target.value)} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', background: 'white' }}>
-            <option value="">Equipo (todos)</option>
-            {(equipos || []).map(eq => <option key={eq.id} value={eq.id}>{eq.codigoInterno}</option>)}
-          </select>
-          <button onClick={() => setPage(1)} style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Filtrar</button>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151' }}>
-            <span>Mostrar por pagina</span>
-            <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', background: 'white' }}>
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Filtros</h3>
+        <div className="filters-grid">
+          <div>
+            <label className="form-label">Buscar</label>
+            <input placeholder="Modelo, marca..." value={search} onChange={(e) => setSearch(e.target.value)} className="input" />
+          </div>
+          <div>
+            <label className="form-label">Tipo</label>
+            <select value={tipoId} onChange={(e) => setTipoId(e.target.value)} className="select">
+              <option value="">Todos</option>
+              {(tipos || []).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Marca</label>
+            <select value={marcaId} onChange={(e) => setMarcaId(e.target.value)} className="select">
+              <option value="">Todas</option>
+              {(marcas || []).map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Equipo</label>
+            <select value={equipoId} onChange={(e) => setEquipoId(e.target.value)} className="select">
+              <option value="">Todos</option>
+              {(equipos || []).map(eq => <option key={eq.id} value={eq.id}>{eq.codigoInterno}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Mostrar por página</label>
+            <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} className="select">
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -176,10 +189,10 @@ export default function PerifericosListPage() {
         ) : items.length === 0 ? (
           <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>No se encontraron perifericos</div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr style={{ background: '#f9fafb' }}>
+                <tr>
                   <th>ID</th>
                   <th>Modelo</th>
                   <th>Tipo</th>
@@ -201,13 +214,13 @@ export default function PerifericosListPage() {
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {canManage && (
-                          <button onClick={() => handleEdit(p)} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Editar</button>
+                          <button onClick={() => handleEdit(p)} className="btn btn-neutral btn-sm">Editar</button>
                         )}
                         {canManage && !p.equipo && (
-                          <button onClick={() => handleEdit(p)} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Asignar</button>
+                          <button onClick={() => handleEdit(p)} className="btn btn-info-soft btn-sm">Asignar</button>
                         )}
                         {canManage && (
-                          <button onClick={() => handleDelete(p)} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Eliminar</button>
+                          <button onClick={() => handleDelete(p)} className="btn btn-danger-soft btn-sm">Eliminar</button>
                         )}
                       </div>
                     </td>
@@ -221,10 +234,10 @@ export default function PerifericosListPage() {
 
       {/* Paginacion */}
       {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={(data?.page || 1) === 1} style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: (data?.page || 1) === 1 ? 'not-allowed' : 'pointer', opacity: (data?.page || 1) === 1 ? 0.6 : 1 }}>Anterior</button>
-          <span style={{ color: '#6b7280' }}>Pagina {data?.page || 1}</span>
-          <button onClick={() => setPage(p => p + 1)} disabled={(data?.page || 1) * (data?.limit || pageSize) >= (data?.total || total)} style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: ((data?.page || 1) * (data?.limit || pageSize) >= (data?.total || total)) ? 'not-allowed' : 'pointer', opacity: ((data?.page || 1) * (data?.limit || pageSize) >= (data?.total || total)) ? 0.6 : 1 }}>Siguiente</button>
+        <div className="pagination">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={(data?.page || 1) === 1} className="btn btn-outline">Anterior</button>
+          <span className="page-info">Página {data?.page || 1}</span>
+          <button onClick={() => setPage(p => p + 1)} disabled={(data?.page || 1) * (data?.limit || pageSize) >= (data?.total || total)} className="btn btn-outline">Siguiente</button>
         </div>
       )}
 
@@ -316,8 +329,8 @@ function PerifericoModal({ onClose, periferico, tipos, marcas, equipos }) {
             <textarea name="especificaciones" rows={4} value={form.especificaciones} onChange={onChange} placeholder="Ej: DDR4 3200MHz 16GB CL16" style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px', resize: 'vertical' }} />
           </label>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-            <button type="button" onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Cancelar</button>
-            <button type="submit" disabled={createMut.isPending || updateMut.isPending} style={{ border: 'none', background: '#3b82f6', color: 'white', borderRadius: 6, padding: '6px 10px', opacity: (createMut.isPending || updateMut.isPending) ? 0.6 : 1 }}>{(createMut.isPending || updateMut.isPending) ? 'Guardando…' : (periferico ? 'Actualizar' : 'Guardar')}</button>
+            <button type="button" onClick={onClose} className="btn btn-outline">Cancelar</button>
+            <button type="submit" disabled={createMut.isPending || updateMut.isPending} className="btn btn-primary">{(createMut.isPending || updateMut.isPending) ? 'Guardando…' : (periferico ? 'Actualizar' : 'Guardar')}</button>
           </div>
         </form>
       </div>

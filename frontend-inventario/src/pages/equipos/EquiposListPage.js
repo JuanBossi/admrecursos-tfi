@@ -134,15 +134,7 @@ export default function EquiposListPage() {
         {canAdd && (
           <button
             onClick={() => { setEditando(null); setMostrarModal(true); }}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              fontWeight: '500'
-            }}
+            className="btn btn-primary"
           >
             + Agregar Equipo
           </button>
@@ -152,9 +144,9 @@ export default function EquiposListPage() {
       {/* Filtros */}
       <div className="card" style={{ marginBottom: '1rem' }}>
         <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Filtros</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div className="filters-grid">
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+            <label className="form-label">
               Buscar
             </label>
             <input
@@ -162,30 +154,18 @@ export default function EquiposListPage() {
               value={filtros.search}
               onChange={(e) => handleFiltroChange('search', e.target.value)}
               placeholder="Nombre, modelo, serie..."
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
+              className="input"
             />
           </div>
           
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+            <label className="form-label">
               Área
             </label>
             <select
               value={filtros.areaId}
               onChange={(e) => handleFiltroChange('areaId', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
+              className="select"
             >
               <option value="">Todas las áreas</option>
               {areasData?.items?.map(area => (
@@ -195,19 +175,13 @@ export default function EquiposListPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+            <label className="form-label">
               Estado
             </label>
             <select
               value={filtros.estado}
               onChange={(e) => handleFiltroChange('estado', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
+              className="select"
             >
               <option value="">Todos los estados</option>
               <option value="ACTIVO">Activo</option>
@@ -217,19 +191,13 @@ export default function EquiposListPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
+            <label className="form-label">
               Mostrar por página
             </label>
             <select
               value={filtros.limit}
               onChange={(e) => handleFiltroChange('limit', parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
+              className="select"
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
@@ -242,12 +210,13 @@ export default function EquiposListPage() {
 
       {/* Tabla de equipos */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
-            Equipos ({total})
-          </h3>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
+              Equipos ({total})
+            </h3>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
+              className="btn btn-outline"
               onClick={() => {
                 const headers = [
                   { key: 'codigoInterno', label: 'Código Interno' },
@@ -269,11 +238,11 @@ export default function EquiposListPage() {
                 }));
                 exportToCSV('equipos', headers, rows);
               }}
-              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
-            >
-              Exportar Excel
-            </button>
+              >
+                Exportar Excel
+              </button>
             <button
+              className="btn btn-outline"
               onClick={() => {
                 const headers = [
                   { key: 'codigoInterno', label: 'Código Interno' },
@@ -295,12 +264,11 @@ export default function EquiposListPage() {
                 }));
                 exportToPrintablePDF('Listado de Equipos', headers, rows);
               }}
-              style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
-            >
-              Exportar PDF
-            </button>
+              >
+                Exportar PDF
+              </button>
+            </div>
           </div>
-        </div>
 
         {equipos.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
@@ -308,10 +276,10 @@ export default function EquiposListPage() {
           </div>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr style={{ background: '#f9fafb' }}>
+                  <tr>
                     <th>Código Interno</th>
                     <th>Tipo</th>
                     <th>Código</th>
@@ -365,14 +333,7 @@ export default function EquiposListPage() {
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           {canManage && (
                           <button
-                            style={{
-                              background: '#f3f4f6',
-                              border: '1px solid #d1d5db',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
+                            className="btn btn-neutral btn-sm"
                             onClick={() => {
                               setEditando(equipo);
                               setFormulario({
@@ -394,15 +355,7 @@ export default function EquiposListPage() {
                           {canManage && equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
                           <button
                             onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
-                            style={{
-                              background: '#fff7ed',
-                              border: '1px solid #fed7aa',
-                              color: '#9a3412',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
+                            className="btn btn-warning-soft btn-sm"
                           >
                             Dar de baja
                           </button>
@@ -410,15 +363,7 @@ export default function EquiposListPage() {
                           {canManage && (
                           <button
                             onClick={() => navigate(`/equipos/${equipo.id}/historial`)}
-                            style={{
-                              background: '#ecfeff',
-                              border: '1px solid #a5f3fc',
-                              color: '#155e75',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
+                            className="btn btn-cyan-soft btn-sm"
                           >
                             Historial
                           </button>
@@ -447,17 +392,11 @@ export default function EquiposListPage() {
 
             {/* Paginación */}
             {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+              <div className="pagination">
                 <button
                   onClick={() => handlePaginacion(filtros.page - 1)}
                   disabled={filtros.page === 1}
-                  style={{
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    background: filtros.page === 1 ? '#f9fafb' : 'white',
-                    cursor: filtros.page === 1 ? 'not-allowed' : 'pointer',
-                    borderRadius: '0.25rem'
-                  }}
+                  className="btn btn-outline"
                 >
                   Anterior
                 </button>
@@ -469,13 +408,7 @@ export default function EquiposListPage() {
                 <button
                   onClick={() => handlePaginacion(filtros.page + 1)}
                   disabled={filtros.page === totalPages}
-                  style={{
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    background: filtros.page === totalPages ? '#f9fafb' : 'white',
-                    cursor: filtros.page === totalPages ? 'not-allowed' : 'pointer',
-                    borderRadius: '0.25rem'
-                  }}
+                  className="btn btn-outline"
                 >
                   Siguiente
                 </button>
