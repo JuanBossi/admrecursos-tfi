@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req } from '@nestjs/common';
 import { EquipoService } from './equipo.service';
 import { CreateEquipoDto } from './dto/create-equipo.dto';
 import { UpdateEquipoDto, BajaEquipoDto } from './dto/update-equipo.dto';
@@ -11,8 +11,9 @@ export class EquipoController {
 
   @Post()
   @Roles('Administrador', 'Tecnico')
-  create(@Body() dto: CreateEquipoDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateEquipoDto, @Req() req: any) {
+    const userId = String(req?.user?.id || '');
+    return this.service.create(dto, userId);
   }
 
   @Get()
@@ -31,8 +32,9 @@ export class EquipoController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateEquipoDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateEquipoDto, @Req() req: any) {
+    const userId = String(req?.user?.id || '');
+    return this.service.update(id, dto, userId);
   }
 
   @Delete(':id')
@@ -41,7 +43,8 @@ export class EquipoController {
   }
 
   @Patch(':id/baja')
-  darDeBaja(@Param('id') id: string, @Body() body: BajaEquipoDto) {
-    return this.service.darDeBaja(id, body);
+  darDeBaja(@Param('id') id: string, @Body() body: BajaEquipoDto, @Req() req: any) {
+    const userId = String(req?.user?.id || '');
+    return this.service.darDeBaja(id, body, userId);
   }
 }

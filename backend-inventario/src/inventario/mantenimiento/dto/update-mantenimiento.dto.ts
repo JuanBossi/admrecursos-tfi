@@ -48,4 +48,9 @@ export class UpdateMantenimientoDto {
   @IsOptional()
   @IsInt()
   updated_by?: number | null;
+
+  // Resultado del mantenimiento al completar: REPARADO o ROTO
+  @IsOptional()
+  @IsEnum(['REPARADO', 'ROTO'] as const)
+  resultado?: 'REPARADO' | 'ROTO';
 }

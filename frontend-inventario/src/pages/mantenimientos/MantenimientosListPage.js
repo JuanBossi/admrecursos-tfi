@@ -36,7 +36,6 @@ export default function MantenimientosListPage() {
 
   async function handleEmpezar(m) {
     await updateMantMut.mutateAsync({ id: m.id, data: { estado: 'EN PROGRESO', fecha_inicio: new Date().toISOString() } });
-    if (m?.equipo?.id) await updateEquipoMut.mutateAsync({ id: m.equipo.id, data: { estado: 'REPARACION' } });
   }
   async function handleCancelar(m) {
     if (m.estado !== 'PROGRAMADO') return;
@@ -47,14 +46,11 @@ export default function MantenimientosListPage() {
   function handleCompletar(m) { setCompletarModal({ open: true, mant: m, decision: 'ACTIVO', motivo: '' }); }
   async function confirmarCompletar() {
     const m = completarModal.mant; if (!m) return;
-    await updateMantMut.mutateAsync({ id: m.id, data: { estado: 'COMPLETO', fecha_fin: new Date().toISOString() } });
-    if (m?.equipo?.id) {
-      if (completarModal.decision === 'BAJA') {
-        const motivo = completarModal.motivo.trim() || 'Baja por mantenimiento';
-        await bajaEquipoMut.mutateAsync({ id: m.equipo.id, motivo });
-      } else {
-        await updateEquipoMut.mutateAsync({ id: m.equipo.id, data: { estado: 'ACTIVO' } });
-      }
+    const resultado = completarModal.decision === 'BAJA' ? 'ROTO' : 'REPARADO';
+    await updateMantMut.mutateAsync({ id: m.id, data: { estado: 'COMPLETO', fecha_fin: new Date().toISOString(), resultado } });
+    if (m?.equipo?.id && completarModal.decision === 'BAJA') {
+      const motivo = completarModal.motivo.trim() || 'Baja por mantenimiento';
+      await bajaEquipoMut.mutateAsync({ id: m.equipo.id, motivo });
     }
     setCompletarModal({ open: false, mant: null, decision: 'ACTIVO', motivo: '' });
   }
