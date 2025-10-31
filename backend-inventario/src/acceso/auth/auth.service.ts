@@ -28,11 +28,9 @@ export class AuthService {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenciales inválidas');
 
-    // Token simple de muestra (puedes cambiar a JWT si lo deseas)
     const tokenPayload = { id: user.id, username: user.username, ts: Date.now() };
     const token = Buffer.from(JSON.stringify(tokenPayload)).toString('base64');
 
-    // Si el usuario es Técnico, resolver técnico usando empleadoId como referencia común
     const names = (user.roles || []).map((r) => r.nombre);
     let tecnico: Tecnico | undefined;
     if (names.includes('Tecnico')) {
@@ -49,7 +47,6 @@ export class AuthService {
       }
     }
 
-    // No devolver passwordHash
     const { passwordHash, ...safeUser } = user as any;
     return { user: { ...safeUser, ...(tecnico ? { tecnico } : {}) }, token };
   }

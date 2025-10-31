@@ -48,7 +48,6 @@ export class AuthGuard implements CanActivate {
     });
     if (!user || !user.activo) throw new UnauthorizedException('Usuario no válido');
 
-    // Enriquecer con técnico si corresponde
     const roleNames = (user.roles || []).map((r) => r.nombre);
     let tecnico: Tecnico | undefined;
     if (roleNames.includes('Tecnico')) {

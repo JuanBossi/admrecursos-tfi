@@ -13,11 +13,6 @@ export class MantenimientoService {
     private readonly mantenimientoRepository: Repository<Mantenimiento>,
   ) {}
 
-  /*async create(createMantenimientoDto: CreateMantenimientoDto) {
-    const mantenimiento = this.mantenimientoRepository.create(createMantenimientoDto);
-    return await this.mantenimientoRepository.save(mantenimiento);
-  }*/
-
    async create(dto: CreateMantenimientoDto) {
     const mantenimiento = this.mantenimientoRepository.create({
       equipo: { id: String(dto.equipo_id) },

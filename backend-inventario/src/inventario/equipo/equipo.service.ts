@@ -123,13 +123,11 @@ export class EquipoService {
     .createQueryBuilder('e')
     .select([
       'e.id AS id',
-      // tu tabla no tiene "nombre", usamos codigo_interno y lo aliaseamos como "nombre"
       'e.codigo_interno AS nombre',
       'e.garantia AS venceEl',
       'DATEDIFF(e.garantia, CURDATE()) AS diasRestantes',
     ])
     .where('e.garantia IS NOT NULL')
-    // ✅ Ventana con DATEDIFF para evitar detalles de hora/zona y ser inclusivo
     .andWhere('DATEDIFF(e.garantia, CURDATE()) BETWEEN 0 AND :dias', { dias: d })
     .orderBy('e.garantia', 'ASC');
 
