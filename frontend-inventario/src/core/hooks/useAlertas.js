@@ -10,7 +10,7 @@ export function useAlertasList(q = {}) {
   return useQuery({
     queryKey: ['alertas', q],
     queryFn: () => fetchAlertas(q),
-    staleTime: 30_000, // 30 segundos para alertas (más frecuente)
+    staleTime: 60_000, // 60 segundos para alertas (más frecuente)
     keepPreviousData: true,
   });
 }

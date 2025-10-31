@@ -124,9 +124,6 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-800">
               Garantías por vencer <span className="text-gray-400">({ventanaDias} días)</span>
             </h2>
-            <Link to="/equipos?garantia=por-vencer" className="text-sm font-medium text-blue-600 hover:underline">
-              Ver todos →
-            </Link>
           </div>
 
           {guarLoading && <div className="py-6 text-center">Cargando garantías…</div>}
