@@ -97,7 +97,6 @@ function daysUntil(iso) {
 
 export function useGarantiasPorVencer({ dias = 30 } = {}) {
   const q = useQuery({
-    // cambiamos la key para forzar refetch limpio
     queryKey: ['garantias-por-vencer-v4', dias],
     queryFn: () => fetchGarantiasPorVencer({ dias }),
     staleTime: 30_000,
