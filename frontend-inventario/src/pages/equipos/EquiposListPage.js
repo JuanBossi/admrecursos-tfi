@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
+import { useMantenimientosList } from '../../core/hooks/useMantenimientos';
+import { usePerifericosList } from '../../core/hooks/usePerifericos';
 import { exportToCSV, exportToPrintablePDF, formatDate } from '../../utils/export';
 
 export default function EquiposListPage() {
@@ -10,135 +12,107 @@ export default function EquiposListPage() {
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
   const canAdd = isAdmin || isTecnico;
-  const canManage = canAdd; // Empleado NO puede editar/baja/historial
-  const [filtros, setFiltros] = useState({
-    search: '',
-    areaId: '',
-    estado: '',
-    page: 1,
-    limit: 10
-  });
-  
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const canManage = canAdd;
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState('');
+  const [areaId, setAreaId] = useState('');
+  const [estado, setEstado] = useState('');
+  const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [formError, setFormError] = useState('');
   const [mostrarPerifs, setMostrarPerifs] = useState({ open: false, equipo: null });
-  const [formulario, setFormulario] = useState({
-    codigoInterno: '',
-    tipo: 'PC',
-    proveedorId: '',
-    areaId: '',
-    empleadoAsignadoId: '',
-    estado: 'ACTIVO',
-    fechaCompra: '',
-    garantia: ''
-  });
+  const [mostrarMantenimientos, setMostrarMantenimientos] = useState({ open: false, equipo: null });
+  const [bajaModal, setBajaModal] = useState({ open: false, equipo: null, motivo: '' });
 
-  // Hooks para datos
-  const { data: equiposData, isLoading, error } = useEquiposList(filtros);
+  const { data, isLoading, error } = useEquiposList({ page, limit, search, areaId: areaId || undefined, estado: estado || undefined });
   const { data: areasData } = useAreas();
   const { data: empleadosData } = useEmpleados();
   const { data: proveedoresData } = useProveedores();
   const createMutation = useEquipoCreate();
   const updateMutation = useEquipoUpdate();
   const bajaMutation = useEquipoBaja();
-  const [bajaModal, setBajaModal] = useState({ open: false, equipo: null, motivo: '' });
 
-  const equipos = equiposData?.items || [];
-  const total = equiposData?.total || 0;
-  const totalPages = Math.ceil(total / filtros.limit);
+  const items = data?.items || [];
+  const total = data?.total || 0;
+  const pageSize = data?.limit || limit || 10;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  // Manejo de filtros
-  const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({
-      ...prev,
-      [campo]: valor,
-      page: 1 // Reset a página 1 cuando cambian filtros
-    }));
+  const handleEdit = (equipo) => {
+    setEditando(equipo);
+    setOpen(true);
   };
 
-  // Manejo de formulario
-  const handleInputChange = (campo, valor) => {
-    setFormulario(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editando) {
-        await updateMutation.mutateAsync({ id: editando.id, data: formulario });
-      } else {
-        await createMutation.mutateAsync(formulario);
-      }
-      setMostrarModal(false);
-      setEditando(null);
-      setFormulario({
-        codigoInterno: '',
-        tipo: 'PC',
-        proveedorId: '',
-        areaId: '',
-        empleadoAsignadoId: '',
-        estado: 'ACTIVO',
-        fechaCompra: '',
-        garantia: ''
-      });
-      setFormError('');
-    } catch (error) {
-      let msg = 'Error al guardar equipo';
-      try {
-        // Algunos errores vienen con response.text como JSON string
-        const parsed = JSON.parse(error.message);
-        if (parsed?.message) msg = parsed.message;
-      } catch (_) {
-        if (error?.message) msg = String(error.message);
-      }
-      setFormError(msg);
+  const handleDelete = async (equipo) => {
+    if (equipo.estado === 'BAJA' || equipo.estado === 'REPARACION') {
+      alert('No se puede dar de baja un equipo que ya está de baja o en reparación');
+      return;
     }
+    setBajaModal({ open: true, equipo, motivo: '' });
   };
-
-  const handlePaginacion = (nuevaPagina) => {
-    setFiltros(prev => ({
-      ...prev,
-      page: nuevaPagina
-    }));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="card">
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p>Cargando equipos...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="card">
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#dc2626' }}>
-          <p>Error al cargar los equipos: {error.message}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>
-      {/* Header con título y botón de agregar */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Equipos</h1>
-        {canAdd && (
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Gestión de Equipos</h1>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
-            onClick={() => { setEditando(null); setMostrarModal(true); }}
-            className="btn btn-primary"
-          >
-            + Agregar Equipo
-          </button>
-        )}
+            className="btn btn-outline"
+            onClick={() => {
+              const headers = [
+                { key: 'codigoInterno', label: 'Código Interno' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'area', label: 'Área' },
+                { key: 'proveedor', label: 'Proveedor' },
+                { key: 'asignado', label: 'Asignado a' },
+                { key: 'estado', label: 'Estado' },
+                { key: 'fechaCompra', label: 'Fecha Compra' },
+                { key: 'garantia', label: 'Garantía' },
+              ];
+              const rows = (items || []).map(e => ({
+                codigoInterno: e?.codigoInterno || '',
+                tipo: e?.tipo || '',
+                area: e?.area?.nombre || '',
+                proveedor: e?.proveedor?.razonSocial || e?.proveedor?.nombre || e?.proveedor?.cuit || '',
+                asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                estado: e?.estado || '',
+                fechaCompra: formatDate(e?.fechaCompra),
+                garantia: formatDate(e?.garantia),
+              }));
+              exportToCSV('equipos', headers, rows);
+            }}
+            style={{ border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', padding: '6px 10px', cursor: 'pointer' }}
+          >Exportar Excel</button>
+          <button
+            className="btn btn-outline"
+            onClick={() => {
+              const headers = [
+                { key: 'codigoInterno', label: 'Código Interno' },
+                { key: 'tipo', label: 'Tipo' },
+                { key: 'area', label: 'Área' },
+                { key: 'proveedor', label: 'Proveedor' },
+                { key: 'asignado', label: 'Asignado a' },
+                { key: 'estado', label: 'Estado' },
+                { key: 'fechaCompra', label: 'Fecha Compra' },
+                { key: 'garantia', label: 'Garantía' },
+              ];
+              const rows = (items || []).map(e => ({
+                codigoInterno: e?.codigoInterno || '',
+                tipo: e?.tipo || '',
+                area: e?.area?.nombre || '',
+                proveedor: e?.proveedor?.razonSocial || e?.proveedor?.nombre || e?.proveedor?.cuit || '',
+                asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
+                estado: e?.estado || '',
+                fechaCompra: formatDate(e?.fechaCompra),
+                garantia: formatDate(e?.garantia),
+              }));
+              exportToPrintablePDF('Listado de Equipos', headers, rows);
+            }}
+          >Exportar PDF</button>
+          {canAdd && (
+            <button onClick={() => { setEditando(null); setOpen(true); }} className="btn btn-primary">+ Agregar Equipo</button>
+          )}
+        </div>
       </div>
 
       {/* Filtros */}
@@ -146,59 +120,28 @@ export default function EquiposListPage() {
         <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Filtros</h3>
         <div className="filters-grid">
           <div>
-            <label className="form-label">
-              Buscar
-            </label>
-            <input
-              type="text"
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-              placeholder="Nombre, modelo, serie..."
-              className="input"
-            />
+            <label className="form-label">Buscar</label>
+            <input placeholder="Código, tipo..." value={search} onChange={(e) => setSearch(e.target.value)} className="input" />
           </div>
-          
           <div>
-            <label className="form-label">
-              Área
-            </label>
-            <select
-              value={filtros.areaId}
-              onChange={(e) => handleFiltroChange('areaId', e.target.value)}
-              className="select"
-            >
-              <option value="">Todas las áreas</option>
-              {areasData?.items?.map(area => (
-                <option key={area.id} value={area.id}>{area.nombre}</option>
-              ))}
+            <label className="form-label">Área</label>
+            <select value={areaId} onChange={(e) => setAreaId(e.target.value)} className="select">
+              <option value="">Todas</option>
+              {(areasData?.items || []).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
           </div>
-
           <div>
-            <label className="form-label">
-              Estado
-            </label>
-            <select
-              value={filtros.estado}
-              onChange={(e) => handleFiltroChange('estado', e.target.value)}
-              className="select"
-            >
-              <option value="">Todos los estados</option>
+            <label className="form-label">Estado</label>
+            <select value={estado} onChange={(e) => setEstado(e.target.value)} className="select">
+              <option value="">Todos</option>
               <option value="ACTIVO">Activo</option>
               <option value="REPARACION">En Reparación</option>
               <option value="BAJA">De Baja</option>
             </select>
           </div>
-
           <div>
-            <label className="form-label">
-              Mostrar por página
-            </label>
-            <select
-              value={filtros.limit}
-              onChange={(e) => handleFiltroChange('limit', parseInt(e.target.value))}
-              className="select"
-            >
+            <label className="form-label">Mostrar por página</label>
+            <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} className="select">
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -208,464 +151,125 @@ export default function EquiposListPage() {
         </div>
       </div>
 
-      {/* Tabla de equipos */}
-      <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>
-              Equipos ({total})
-            </h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                const headers = [
-                  { key: 'codigoInterno', label: 'Código Interno' },
-                  { key: 'tipo', label: 'Tipo' },
-                  { key: 'area', label: 'Área' },
-                  { key: 'asignado', label: 'Asignado a' },
-                  { key: 'estado', label: 'Estado' },
-                  { key: 'fechaCompra', label: 'Fecha Compra' },
-                  { key: 'garantia', label: 'Garantía' },
-                ];
-                const rows = (equipos || []).map(e => ({
-                  codigoInterno: e?.codigoInterno || '',
-                  tipo: e?.tipo || '',
-                  area: e?.area?.nombre || '',
-                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
-                  estado: e?.estado || '',
-                  fechaCompra: formatDate(e?.fechaCompra),
-                  garantia: formatDate(e?.garantia),
-                }));
-                exportToCSV('equipos', headers, rows);
-              }}
-              >
-                Exportar Excel
-              </button>
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                const headers = [
-                  { key: 'codigoInterno', label: 'Código Interno' },
-                  { key: 'tipo', label: 'Tipo' },
-                  { key: 'area', label: 'Área' },
-                  { key: 'asignado', label: 'Asignado a' },
-                  { key: 'estado', label: 'Estado' },
-                  { key: 'fechaCompra', label: 'Fecha Compra' },
-                  { key: 'garantia', label: 'Garantía' },
-                ];
-                const rows = (equipos || []).map(e => ({
-                  codigoInterno: e?.codigoInterno || '',
-                  tipo: e?.tipo || '',
-                  area: e?.area?.nombre || '',
-                  asignado: e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '',
-                  estado: e?.estado || '',
-                  fechaCompra: formatDate(e?.fechaCompra),
-                  garantia: formatDate(e?.garantia),
-                }));
-                exportToPrintablePDF('Listado de Equipos', headers, rows);
-              }}
-              >
-                Exportar PDF
-              </button>
-            </div>
-          </div>
-
-        {equipos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            <p>No se encontraron equipos con los filtros aplicados</p>
-          </div>
+      {/* Tabla */}
+      <div style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: '0.5rem', padding: '0.5rem' }}>
+        {isLoading ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Cargando…</div>
+        ) : error ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#b91c1c' }}>{error.message}</div>
+        ) : items.length === 0 ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>No se encontraron equipos</div>
         ) : (
-          <>
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Código Interno</th>
-                    <th>Tipo</th>
-                    <th>Código</th>
-                    <th>Área</th>
-                    <th>Asignado a</th>
-                    <th>Estado</th>
-                    <th>Fecha Compra</th>
-                    <th>Garantía</th>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Código Interno</th>
+                  <th>Tipo</th>
+                  <th>Área</th>
+                  <th>Proveedor</th>
+                  <th>Asignado a</th>
+                  <th>Estado</th>
+                  <th>Fecha Compra</th>
+                  <th>Garantía</th>
                   <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {equipos.map(equipo => (
-                    <tr key={equipo.id}>
-                      <td>
-                        <div style={{ fontWeight: '500' }}>
-                          {equipo.codigoInterno}
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((e, idx) => (
+                  <tr key={e.id} style={{ background: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                    <td><span style={{ fontWeight: '600' }}>{e.codigoInterno || '-'}</span></td>
+                    <td>{e.tipo || '-'}</td>
+                    <td>{e?.area?.nombre || '-'}</td>
+                    <td>{e?.proveedor?.razonSocial || e?.proveedor?.nombre || e?.proveedor?.cuit || '-'}</td>
+                    <td>{e?.empleadoAsignado ? `${e.empleadoAsignado.nombre || ''} ${e.empleadoAsignado.apellido || ''}`.trim() : '-'}</td>
+                    <td>
+                      <span style={{
+                        background: e.estado === 'ACTIVO' ? '#dcfce7' :
+                                   e.estado === 'REPARACION' ? '#dbeafe' :
+                                   '#fee2e2',
+                        color: e.estado === 'ACTIVO' ? '#166534' :
+                               e.estado === 'REPARACION' ? '#1e40af' :
+                               '#991b1b',
+                        borderRadius: '0.25rem',
+                        padding: '0.125rem 0.5rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>{e.estado || '-'}</span>
+                      {e.estado === 'BAJA' && e.motivoBaja && (
+                        <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#991b1b' }}>
+                          Motivo: {e.motivoBaja}
                         </div>
-                      </td>
-                      <td>{equipo.tipo || '-'}</td>
-                      <td>{equipo.codigoInterno || '-'}</td>
-                      <td>{equipo.area?.nombre || '-'}</td>
-                      <td>{equipo.empleadoAsignado ? `${equipo.empleadoAsignado.nombre} ${equipo.empleadoAsignado.apellido}` : '-'}</td>
-                      <td>
-                        <span className={`badge ${
-                          equipo.estado === 'ACTIVO' ? 'badge-success' :
-                          equipo.estado === 'INACTIVO' ? 'badge-warning' :
-                          equipo.estado === 'REPARACION' ? 'badge-info' :
-                          'badge-danger'
-                        }`} style={{
-                          background: equipo.estado === 'ACTIVO' ? '#dcfce7' :
-                                     equipo.estado === 'INACTIVO' ? '#fef3c7' :
-                                     equipo.estado === 'REPARACION' ? '#dbeafe' :
-                                     '#fee2e2',
-                          color: equipo.estado === 'ACTIVO' ? '#166534' :
-                                 equipo.estado === 'INACTIVO' ? '#92400e' :
-                                 equipo.estado === 'REPARACION' ? '#1e40af' :
-                                 '#991b1b'
-                        }}>
-                          {equipo.estado}
-                        </span>
-                        {equipo.estado === 'BAJA' && equipo.motivoBaja && (
-                          <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#991b1b' }}>
-                            Motivo: {equipo.motivoBaja}
-                          </div>
+                      )}
+                    </td>
+                    <td>{e.fechaCompra ? new Date(e.fechaCompra).toLocaleDateString() : '-'}</td>
+                    <td>{e.garantia ? new Date(e.garantia).toLocaleDateString() : '-'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {canManage && (
+                          <button onClick={() => handleEdit(e)} className="btn btn-neutral btn-sm">Editar</button>
                         )}
-                      </td>
-                      <td>{equipo.fechaCompra ? new Date(equipo.fechaCompra).toLocaleDateString() : '-'}</td>
-                      <td>{equipo.garantia ? new Date(equipo.garantia).toLocaleDateString() : '-'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          {canManage && (
-                          <button
-                            className="btn btn-neutral btn-sm"
-                            onClick={() => {
-                              setEditando(equipo);
-                              setFormulario({
-                                codigoInterno: equipo.codigoInterno || '',
-                                tipo: equipo.tipo || 'PC',
-                                proveedorId: equipo.proveedor?.id || '',
-                                areaId: equipo.area?.id || '',
-                                empleadoAsignadoId: equipo.empleadoAsignado?.id || '',
-                                estado: equipo.estado || 'ACTIVO',
-                                fechaCompra: equipo.fechaCompra || '',
-                                garantia: equipo.garantia || '',
-                              });
-                              setMostrarModal(true);
-                            }}
-                          >
-                            Editar
-                          </button>
-                          )}
-                          {canManage && equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
-                          <button
-                            onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
-                            className="btn btn-warning-soft btn-sm"
-                          >
-                            Dar de baja
-                          </button>
-                          )}
-                          {canManage && (
-                          <button
-                            onClick={() => navigate(`/equipos/${equipo.id}/historial`)}
-                            className="btn btn-cyan-soft btn-sm"
-                          >
-                            Historial
-                          </button>
-                          )}
-                          <button
-                            onClick={() => setMostrarPerifs({ open: true, equipo })}
-                            style={{
-                              background: '#eef2ff',
-                              border: '1px solid #c7d2fe',
-                              color: '#3730a3',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            Ver periféricos
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  onClick={() => handlePaginacion(filtros.page - 1)}
-                  disabled={filtros.page === 1}
-                  className="btn btn-outline"
-                >
-                  Anterior
-                </button>
-                
-                <span style={{ padding: '0 1rem' }}>
-                  Página {filtros.page} de {totalPages}
-                </span>
-                
-                <button
-                  onClick={() => handlePaginacion(filtros.page + 1)}
-                  disabled={filtros.page === totalPages}
-                  className="btn btn-outline"
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
-          </>
+                        {canManage && (
+                          <button onClick={() => navigate(`/equipos/${e.id}/historial`)} className="btn btn-cyan-soft btn-sm">Historial</button>
+                        )}
+                        <button onClick={() => setMostrarPerifs({ open: true, equipo: e })} className="btn btn-info-soft btn-sm">Periféricos</button>
+                        <button onClick={() => setMostrarMantenimientos({ open: true, equipo: e })} className="btn btn-success-soft btn-sm">Mantenimientos</button>
+                        {canManage && e.estado !== 'BAJA' && e.estado !== 'REPARACION' && (
+                          <button onClick={() => handleDelete(e)} className="btn btn-danger-soft btn-sm">Dar de baja</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Modal para agregar/editar equipo */}
-      {mostrarModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '0.5rem',
-            padding: '1.5rem',
-            width: '90%',
-            maxWidth: '600px',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{editando ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}</h2>
-              <button
-                onClick={() => setMostrarModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: '#6b7280'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              {formError && (
-                <div style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '8px 10px', borderRadius: 6, marginBottom: 12, fontSize: 14 }}>
-                  {formError}
-                </div>
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Código Interno *
-                  </label>
-                  <input
-                    type="text"
-                    value={formulario.codigoInterno}
-                    onChange={(e) => handleInputChange('codigoInterno', e.target.value)}
-                    disabled={!!editando}
-                    readOnly={!!editando}
-                    required
-                    placeholder="Ej: EQ-0001"
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Tipo *
-                  </label>
-                  <select
-                    value={formulario.tipo}
-                    onChange={(e) => handleInputChange('tipo', e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="PC">PC</option>
-                    <option value="NOTEBOOK">Notebook</option>
-                    <option value="SERVIDOR">Servidor</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Área
-                  </label>
-                  <select
-                    value={formulario.areaId}
-                    onChange={(e) => handleInputChange('areaId', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="">Seleccionar área</option>
-                    {areasData?.items?.map(area => (
-                      <option key={area.id} value={area.id}>{area.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Asignado a
-                  </label>
-                  <select
-                    value={formulario.empleadoAsignadoId}
-                    onChange={(e) => handleInputChange('empleadoAsignadoId', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <option value="">Sin asignar</option>
-                    {empleadosData?.items?.map(empleado => (
-                      <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {!editando && (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                      Proveedor
-                    </label>
-                    <select
-                      value={formulario.proveedorId}
-                      onChange={(e) => handleInputChange('proveedorId', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      <option value="">Seleccionar proveedor</option>
-                    {proveedoresData?.items?.map(proveedor => (
-                      <option key={proveedor.id} value={proveedor.id}>{proveedor.razonSocial || proveedor.nombre || proveedor.cuit}</option>
-                    ))}
-                  </select>
-                </div>
-                )}
-
-                
-
-                {!editando && (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                      Fecha de Compra
-                    </label>
-                    <input
-                      type="date"
-                      value={formulario.fechaCompra}
-                      onChange={(e) => handleInputChange('fechaCompra', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                    Fecha de Vencimiento de Garantía
-                  </label>
-                  <input
-                    type="date"
-                    value={formulario.garantia}
-                    onChange={(e) => handleInputChange('garantia', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setMostrarModal(false)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #d1d5db',
-                    background: 'white',
-                    borderRadius: '0.375rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    border: 'none',
-                    background: createMutation.isPending ? '#9ca3af' : '#3b82f6',
-                    color: 'white',
-                    borderRadius: '0.375rem',
-                    cursor: createMutation.isPending ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {createMutation.isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={(data?.page || 1) === 1} className="btn btn-outline">Anterior</button>
+          <span className="page-info">Página {data?.page || 1} de {totalPages}</span>
+          <button onClick={() => setPage(p => p + 1)} disabled={(data?.page || 1) * (data?.limit || pageSize) >= (data?.total || total)} className="btn btn-outline">Siguiente</button>
         </div>
       )}
 
-      {/* Modal periféricos por equipo */}
+      {/* Modal agregar/editar */}
+      {open && (
+        <EquipoModal
+          onClose={() => { setOpen(false); setEditando(null); }}
+          equipo={editando}
+          areas={areasData?.items || []}
+          empleados={empleadosData?.items || []}
+          proveedores={proveedoresData?.items || []}
+        />
+      )}
+
+      {/* Modal periféricos */}
       {mostrarPerifs.open && (
-        <PerifericosDeEquipoModal
+        <PerifericosModal
           equipo={mostrarPerifs.equipo}
           onClose={() => setMostrarPerifs({ open: false, equipo: null })}
         />
       )}
 
-      {/* Modal de baja */}
+      {/* Modal mantenimientos */}
+      {mostrarMantenimientos.open && (
+        <MantenimientosModal
+          equipo={mostrarMantenimientos.equipo}
+          onClose={() => setMostrarMantenimientos({ open: false, equipo: null })}
+        />
+      )}
+
+      {/* Modal dar de baja */}
       {bajaModal.open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setBajaModal({ open: false, equipo: null, motivo: '' })}>
           <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', width: '90%', maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginTop: 0, marginBottom: 12 }}>Dar de baja equipo {bajaModal.equipo?.codigoInterno}</h3>
             <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
-              <span>Motivo de baja</span>
+              <span>Motivo de baja *</span>
               <input value={bajaModal.motivo} onChange={(e) => setBajaModal(m => ({ ...m, motivo: e.target.value }))} placeholder="Ej: obsolescencia, falla irreparable, robo…" style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '8px 10px' }} />
             </label>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
@@ -678,6 +282,7 @@ export default function EquiposListPage() {
                     setBajaModal({ open: false, equipo: null, motivo: '' });
                   } catch (err) {
                     console.error('Error al dar de baja:', err);
+                    alert('Error al dar de baja el equipo');
                   }
                 }}
                 style={{ border: 'none', background: '#f97316', color: 'white', borderRadius: 6, padding: '6px 10px', opacity: (bajaMutation.isPending || !bajaModal.motivo.trim()) ? 0.6 : 1 }}
@@ -692,52 +297,264 @@ export default function EquiposListPage() {
   );
 }
 
-function PerifericosDeEquipoModal({ equipo, onClose }) {
+function EquipoModal({ onClose, equipo, areas, empleados, proveedores }) {
+  const createMut = useEquipoCreate();
+  const updateMut = useEquipoUpdate();
+  const [form, setForm] = useState({
+    codigoInterno: equipo?.codigoInterno || '',
+    tipo: equipo?.tipo || 'PC',
+    proveedorId: equipo?.proveedor?.id || '',
+    areaId: equipo?.area?.id || '',
+    empleadoAsignadoId: equipo?.empleadoAsignado?.id || '',
+    estado: equipo?.estado || 'ACTIVO',
+    fechaCompra: equipo?.fechaCompra ? new Date(equipo.fechaCompra).toISOString().split('T')[0] : '',
+    garantia: equipo?.garantia ? new Date(equipo.garantia).toISOString().split('T')[0] : '',
+  });
+  const [error, setError] = useState('');
+
+  const onChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!form.codigoInterno.trim()) { setError('El código interno es obligatorio'); return; }
+    try {
+      const payload = {
+        codigoInterno: form.codigoInterno.trim(),
+        tipo: form.tipo,
+        proveedorId: form.proveedorId ? String(form.proveedorId) : undefined,
+        areaId: form.areaId ? String(form.areaId) : undefined,
+        empleadoAsignadoId: form.empleadoAsignadoId ? String(form.empleadoAsignadoId) : undefined,
+        estado: form.estado,
+        fechaCompra: form.fechaCompra || undefined,
+        garantia: form.garantia || undefined,
+      };
+      if (equipo) await updateMut.mutateAsync({ id: equipo.id, data: payload });
+      else await createMut.mutateAsync(payload);
+      onClose();
+    } catch (err) {
+      const msg = err?.response?.data?.message || `No se pudo ${equipo ? 'actualizar' : 'crear'} el equipo`;
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.25rem', width: '90%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{equipo ? 'Editar equipo' : 'Nuevo equipo'}</h3>
+          <button type="button" onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 8, width: 32, height: 32 }}>×</button>
+        </div>
+        {error && <div style={{ marginBottom: 12, border: '1px solid #fecaca', background: '#fee2e2', color: '#991b1b', borderRadius: 8, padding: '8px 12px', fontSize: 14 }}>{error}</div>}
+        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Código Interno *</span>
+            <input name="codigoInterno" value={form.codigoInterno} onChange={onChange} disabled={!!equipo} required placeholder="Ej: EQ-0001" style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
+          </label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Tipo *</span>
+            <select name="tipo" value={form.tipo} onChange={onChange} required style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+              <option value="PC">PC</option>
+              <option value="NOTEBOOK">Notebook</option>
+              <option value="SERVIDOR">Servidor</option>
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Área</span>
+            <select name="areaId" value={form.areaId} onChange={onChange} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+              <option value="">(sin asignar)</option>
+              {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Proveedor</span>
+            <select name="proveedorId" value={form.proveedorId} onChange={onChange} disabled={!!equipo} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+              <option value="">(sin asignar)</option>
+              {proveedores.map(p => <option key={p.id} value={p.id}>{p.razonSocial || p.nombre || p.cuit}</option>)}
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Asignado a</span>
+            <select name="empleadoAsignadoId" value={form.empleadoAsignadoId} onChange={onChange} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+              <option value="">(sin asignar)</option>
+              {empleados.map(emp => <option key={emp.id} value={emp.id}>{emp.nombre} {emp.apellido}</option>)}
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Estado</span>
+            <select name="estado" value={form.estado} onChange={onChange} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}>
+              <option value="ACTIVO">Activo</option>
+              <option value="REPARACION">En Reparación</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+          </label>
+          {!equipo && (
+            <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+              <span>Fecha de Compra</span>
+              <input type="date" name="fechaCompra" value={form.fechaCompra} onChange={onChange} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
+            </label>
+          )}
+          <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+            <span>Fecha de Vencimiento de Garantía</span>
+            <input type="date" name="garantia" value={form.garantia} onChange={onChange} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }} />
+          </label>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={onClose} className="btn btn-outline">Cancelar</button>
+            <button type="submit" disabled={createMut.isPending || updateMut.isPending} className="btn btn-primary">{(createMut.isPending || updateMut.isPending) ? 'Guardando…' : (equipo ? 'Actualizar' : 'Guardar')}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function PerifericosModal({ equipo, onClose }) {
   const [page, setPage] = useState(1);
-  const { usePerifericosList } = require('../../core/hooks/usePerifericos');
   const { data, isLoading, error } = usePerifericosList({ page, limit: 10, equipoId: equipo?.id });
+
+  function formatEspecificaciones(raw) {
+    if (!raw) return '-';
+    try {
+      const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        const label = (k) => String(k).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        return Object.entries(obj)
+          .map(([k, v]) => `${label(k)}: ${Array.isArray(v) ? v.join(', ') : String(v)}`)
+          .join(' · ');
+      }
+    } catch (_) {}
+    return String(raw);
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
       <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', width: '90%', maxWidth: 800, maxHeight: '85vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
           <h3 style={{ margin: 0 }}>Periféricos de {equipo?.codigoInterno}</h3>
-          <button onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 8, width: 32, height: 32 }}>✕</button>
+          <button onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 8, width: 32, height: 32 }}>×</button>
         </div>
         {isLoading ? (
           <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Cargando…</div>
         ) : error ? (
           <div style={{ padding: '1rem', textAlign: 'center', color: '#b91c1c' }}>{error.message}</div>
+        ) : (data?.items || []).length === 0 ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Este equipo no tiene periféricos asignados</div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr style={{ background: '#f9fafb' }}>
-                <th>ID</th>
-                <th>Modelo</th>
-                <th>Tipo</th>
-                <th>Marca</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.items || []).map(p => (
-                <tr key={p.id}>
-                  <td>{p.id}</td>
-                  <td>{p.modelo || '-'}</td>
-                  <td>{p?.tipo?.nombre || '-'}</td>
-                  <td>{p?.marca?.nombre || '-'}</td>
-                  <td>{p.estado}</td>
+          <>
+            <table className="table">
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  <th>ID</th>
+                  <th>Modelo</th>
+                  <th>Tipo</th>
+                  <th>Marca</th>
+                  <th>Especificaciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(data?.items || []).map(p => (
+                  <tr key={p.id}>
+                    <td>{p.id}</td>
+                    <td>{p.modelo || '-'}</td>
+                    <td>{p?.tipo?.nombre || '-'}</td>
+                    <td>{p?.marca?.nombre || '-'}</td>
+                    <td><div style={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatEspecificaciones(p.especificaciones)}</div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(data?.total || 0) > 10 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                <button disabled={(data?.page || 1) === 1} onClick={() => setPage(p => p - 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Anterior</button>
+                <span style={{ color: '#6b7280', padding: '0 8px', display: 'flex', alignItems: 'center' }}>Página {data?.page || 1}</span>
+                <button disabled={(data?.page || 1) * (data?.limit || 10) >= (data?.total || 0)} onClick={() => setPage(p => p + 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Siguiente</button>
+              </div>
+            )}
+          </>
         )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-          <button disabled={(data?.page || 1) === 1} onClick={() => setPage(p => p - 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Anterior</button>
-          <span style={{ color: '#6b7280' }}>Página {data?.page || 1}</span>
-          <button disabled={(data?.page || 1) * (data?.limit || 10) >= (data?.total || 0)} onClick={() => setPage(p => p + 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Siguiente</button>
-        </div>
       </div>
     </div>
   );
 }
+
+function MantenimientosModal({ equipo, onClose }) {
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useMantenimientosList({ page, limit: 10, equipoId: equipo?.id });
+
+  const formatEstado = (estado) => {
+    const estados = {
+      'PROGRAMADO': { bg: '#fef3c7', color: '#92400e', label: 'Programado' },
+      'EN PROGRESO': { bg: '#dbeafe', color: '#1e40af', label: 'En Progreso' },
+      'COMPLETO': { bg: '#dcfce7', color: '#166534', label: 'Completo' },
+      'CANCELADO': { bg: '#fee2e2', color: '#991b1b', label: 'Cancelado' },
+    };
+    const est = estados[estado] || { bg: '#f3f4f6', color: '#374151', label: estado };
+    return (
+      <span style={{
+        background: est.bg,
+        color: est.color,
+        borderRadius: '0.25rem',
+        padding: '0.125rem 0.5rem',
+        fontSize: '0.75rem',
+        fontWeight: '500'
+      }}>{est.label}</span>
+    );
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', width: '90%', maxWidth: 900, maxHeight: '85vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h3 style={{ margin: 0 }}>Mantenimientos de {equipo?.codigoInterno}</h3>
+          <button onClick={onClose} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 8, width: 32, height: 32 }}>×</button>
+        </div>
+        {isLoading ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Cargando…</div>
+        ) : error ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#b91c1c' }}>{error.message}</div>
+        ) : (data?.items || []).length === 0 ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>Este equipo no tiene mantenimientos registrados</div>
+        ) : (
+          <>
+            <table className="table">
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  <th>ID</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Fecha Programada</th>
+                  <th>Fecha Inicio</th>
+                  <th>Fecha Fin</th>
+                  <th>Técnico</th>
+                  <th>Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.items || []).map(m => (
+                  <tr key={m.id}>
+                    <td>{m.id}</td>
+                    <td>{m.tipo || '-'}</td>
+                    <td>{formatEstado(m.estado)}</td>
+                    <td>{m.fecha_programada ? new Date(m.fecha_programada).toLocaleDateString() : '-'}</td>
+                    <td>{m.fecha_inicio ? new Date(m.fecha_inicio).toLocaleDateString() : '-'}</td>
+                    <td>{m.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : '-'}</td>
+                    <td>{m?.tecnico ? `${m.tecnico.nombre || ''} ${m.tecnico.apellido || ''}`.trim() : '-'}</td>
+                    <td><div style={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.descripcion || '-'}</div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(data?.total || 0) > 10 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                <button disabled={(data?.page || 1) === 1} onClick={() => setPage(p => p - 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Anterior</button>
+                <span style={{ color: '#6b7280', padding: '0 8px', display: 'flex', alignItems: 'center' }}>Página {data?.page || 1}</span>
+                <button disabled={(data?.page || 1) * (data?.limit || 10) >= (data?.total || 0)} onClick={() => setPage(p => p + 1)} style={{ border: '1px solid #e5e7eb', background: 'white', borderRadius: 6, padding: '6px 10px' }}>Siguiente</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
