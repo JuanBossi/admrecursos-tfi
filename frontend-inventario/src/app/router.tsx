@@ -10,6 +10,7 @@ import TecnicosListPage from '../pages/tecnicos/TecnicosListPage';
 import EmpleadosListPage from '../pages/empleados/EmpleadosListPage';
 import ProveedoresListPage from '../pages/proveedores/ProveedoresListPage';
 import LoginPage from '../pages/usuarios/loginpage';
+import HistorialEquipoPage from '../pages/historial/HistorialEquipoPage';
 import { useAuth } from '../core/auth/AuthContext';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'equipos', element: <EquiposListPage /> },
+      { path: 'equipos/:id/historial', element: <HistorialEquipoPage /> },
       { path: 'mantenimientos', element: <MantenimientosListPage /> },
       { path: 'perifericos', element: <PerifericosListPage /> },
       { path: 'alertas', element: <AlertasListPage /> },

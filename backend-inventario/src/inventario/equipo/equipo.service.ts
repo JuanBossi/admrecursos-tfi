@@ -14,7 +14,7 @@ export class EquipoService {
     @InjectRepository(HistorialCambios) private histRepo: Repository<HistorialCambios>,
   ) {}
 
-  async create(dto: CreateEquipoDto) {
+  async create(dto: CreateEquipoDto, userId?: string) {
     // Validación de unicidad de código interno con mensaje claro
     const exists = await this.repo.exists({ where: { codigoInterno: dto.codigoInterno } });
     if (exists) throw new BadRequestException('Ya existe un equipo con ese código interno');
@@ -28,7 +28,15 @@ export class EquipoService {
       area: dto.areaId ? ({ id: dto.areaId } as any) : undefined,
       empleadoAsignado: dto.empleadoAsignadoId ? ({ id: dto.empleadoAsignadoId } as any) : undefined,
     });
-    return this.repo.save(equipo);
+    const saved = await this.repo.save(equipo);
+    // Registrar estado inicial
+    await this.histRepo.save(this.histRepo.create({
+      equipo: { id: String(saved.id) } as any,
+      accion: HistorialAccion.ACTIVO,
+      usuario: userId ? ({ id: String(userId) } as any) : undefined,
+      motivo: 'Creación de equipo',
+    }));
+    return saved;
   }
 
   async findAll(q: QueryEquipoDto) {
@@ -63,8 +71,9 @@ export class EquipoService {
     return equipo;
   }
 
-  async update(id: string, dto: UpdateEquipoDto) {
+  async update(id: string, dto: UpdateEquipoDto, userId?: string) {
     const equipo = await this.findOne(id);
+    const estadoAnterior = equipo.estado;
 
     // Si intenta cambiar el código interno, validar que no esté usado por otro
     if (dto.codigoInterno !== undefined) {
@@ -89,9 +98,31 @@ export class EquipoService {
     if (dto.tipo !== undefined) equipo.tipo = dto.tipo;
     if (dto.fechaCompra !== undefined) equipo.fechaCompra = dto.fechaCompra;
     if (dto.garantia !== undefined) equipo.garantia = dto.garantia;
-    if (dto.estado !== undefined) equipo.estado = dto.estado;
+    if (dto.estado !== undefined) equipo.estado = dto.estado as any;
 
-    return this.repo.save(equipo);
+    const saved = await this.repo.save(equipo);
+
+    // Si cambió el estado, registrar en historial
+    if (dto.estado !== undefined && dto.estado !== estadoAnterior) {
+      const accion =
+        dto.estado === EquipoEstado.REPARACION
+          ? HistorialAccion.REPARACION
+          : dto.estado === EquipoEstado.ACTIVO
+            ? HistorialAccion.ACTIVO
+            : dto.estado === EquipoEstado.BAJA
+              ? HistorialAccion.BAJA
+              : undefined;
+      if (accion) {
+        await this.histRepo.save(this.histRepo.create({
+          equipo: { id } as any,
+          accion,
+          usuario: userId ? ({ id: String(userId) } as any) : undefined,
+          motivo: 'Cambio de estado',
+        }));
+      }
+    }
+
+    return saved;
   }
 
   async remove(id: string) {
@@ -100,15 +131,17 @@ export class EquipoService {
     return { deleted: true };
   }
 
-  async darDeBaja(id: string, dto: BajaEquipoDto) {
+  async darDeBaja(id: string, dto: BajaEquipoDto, userId?: string) {
     const equipo = await this.findOne(id);
+    const estadoAnterior = equipo.estado;
     equipo.estado = EquipoEstado.BAJA;
     equipo.motivoBaja = dto.motivo;
     const saved = await this.repo.save(equipo);
     await this.histRepo.save(this.histRepo.create({
       equipo: { id } as any,
-      accion: HistorialAccion.BAJA,
+      accion: estadoAnterior === EquipoEstado.REPARACION ? HistorialAccion.ROTO : HistorialAccion.BAJA,
       motivo: dto.motivo,
+      usuario: userId ? ({ id: String(userId) } as any) : undefined,
     }));
     return saved;
   }
@@ -123,13 +156,11 @@ export class EquipoService {
     .createQueryBuilder('e')
     .select([
       'e.id AS id',
-      // tu tabla no tiene "nombre", usamos codigo_interno y lo aliaseamos como "nombre"
       'e.codigo_interno AS nombre',
       'e.garantia AS venceEl',
       'DATEDIFF(e.garantia, CURDATE()) AS diasRestantes',
     ])
     .where('e.garantia IS NOT NULL')
-    // ✅ Ventana con DATEDIFF para evitar detalles de hora/zona y ser inclusivo
     .andWhere('DATEDIFF(e.garantia, CURDATE()) BETWEEN 0 AND :dias', { dias: d })
     .orderBy('e.garantia', 'ASC');
 

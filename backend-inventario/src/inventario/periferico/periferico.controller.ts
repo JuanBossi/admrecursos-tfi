@@ -35,7 +35,6 @@ export class PerifericoController {
     return this.service.remove(id);
   }
 
-  // Helpers: asignar / desasignar
   @Patch(':id/asignar/:equipoId')
   asignar(@Param('id') id: string, @Param('equipoId') equipoId: string) {
     return this.service.asignarAEquipo(id, equipoId);

@@ -16,7 +16,6 @@ export class Mantenimiento {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  // 🧩 RELACIONES PRINCIPALES
   @ManyToOne(() => Equipo, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'equipo_id' })
   equipo: Equipo;
@@ -33,7 +32,6 @@ export class Mantenimiento {
   @JoinColumn({ name: 'updated_by' })
   updatedBy: Usuario | null;
 
-  // 🧩 CAMPOS DE DATOS
   @Column({ type: 'enum', enum: ['Preventivo', 'Correctivo'] })
   tipo: 'Preventivo' | 'Correctivo';
 
@@ -56,7 +54,6 @@ export class Mantenimiento {
   @Column({ type: 'datetime', nullable: true })
   fecha_fin: Date | null;
 
-  // 🧩 AUDITORÍA
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   created_at: Date;
 

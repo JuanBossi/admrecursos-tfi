@@ -34,7 +34,6 @@ export class EmpleadoService {
 
     const saved = await this.repo.save(empleado);
 
-    // Crear/actualizar usuario asociado: email = contacto, password = dni, rol Empleado
     try {
       const email = (dto.contacto || '').trim();
       const dniRaw = dto.dni || '';
@@ -85,7 +84,6 @@ export class EmpleadoService {
       : {};
 
     if (Array.isArray(where)) {
-      // al usar array (OR), aplicamos areaId en cada rama
       const filtered = where.map(w => (areaId ? { ...w, area: { id: areaId } } : w));
       const [items, total] = await this.repo.findAndCount({
         where: filtered,

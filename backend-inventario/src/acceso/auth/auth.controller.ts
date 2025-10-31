@@ -33,7 +33,6 @@ export class AuthController {
     return this.service.login(body.username, body.password);
   }
 
-  // Endpoint de ayuda (solo dev/local) para crear seed admin rápido
 
   @Public()
   @Post('dev/seed-admin')

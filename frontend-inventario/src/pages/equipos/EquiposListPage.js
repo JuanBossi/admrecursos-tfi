@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useEquiposList, useEquipoCreate, useEquipoUpdate, useEquipoBaja, useAreas, useEmpleados, useProveedores } from '../../core/hooks/useEquipos';
 import { exportToCSV, exportToPrintablePDF, formatDate } from '../../utils/export';
 
 export default function EquiposListPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
   const canAdd = isAdmin || isTecnico;
+  const canManage = canAdd; // Empleado NO puede editar/baja/historial
   const [filtros, setFiltros] = useState({
     search: '',
     areaId: '',
@@ -360,6 +363,7 @@ export default function EquiposListPage() {
                       <td>{equipo.garantia ? new Date(equipo.garantia).toLocaleDateString() : '-'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {canManage && (
                           <button
                             style={{
                               background: '#f3f4f6',
@@ -386,7 +390,8 @@ export default function EquiposListPage() {
                           >
                             Editar
                           </button>
-                          {equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
+                          )}
+                          {canManage && equipo.estado !== 'BAJA' && equipo.estado !== 'REPARACION' && (
                           <button
                             onClick={() => setBajaModal({ open: true, equipo, motivo: '' })}
                             style={{
@@ -400,6 +405,22 @@ export default function EquiposListPage() {
                             }}
                           >
                             Dar de baja
+                          </button>
+                          )}
+                          {canManage && (
+                          <button
+                            onClick={() => navigate(`/equipos/${equipo.id}/historial`)}
+                            style={{
+                              background: '#ecfeff',
+                              border: '1px solid #a5f3fc',
+                              color: '#155e75',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            Historial
                           </button>
                           )}
                           <button

@@ -6,6 +6,7 @@ export default function ProveedoresListPage() {
   const { user } = useAuth();
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
+  const canManage = isAdmin || isTecnico; // Empleado solo lectura
 
   const [filtros, setFiltros] = useState({ search: '', page: 1, limit: 10 });
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -69,7 +70,7 @@ export default function ProveedoresListPage() {
     setForm({ razonSocial: '', cuit: '', contacto: '', email: '', telefono: '', direccion: '' });
   }
 
-  if (!isAdmin && !isTecnico) {
+  if (false && !isAdmin && !isTecnico) {
     return (
       <div className="card">
         <p style={{ margin: 0, color: '#991b1b' }}>Acceso restringido: solo técnicos y administradores pueden ver proveedores.</p>
@@ -81,7 +82,7 @@ export default function ProveedoresListPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Proveedores</h1>
-        {isAdmin && (
+        {canManage && (
           <button onClick={() => { setEditando(null); setForm({ razonSocial: '', cuit: '', contacto: '', email: '', telefono: '', direccion: '' }); setMostrarModal(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 500 }}>+ Agregar</button>
         )}
       </div>
@@ -135,7 +136,7 @@ export default function ProveedoresListPage() {
                     <td>{p.direccion || '-'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {isAdmin && (
+                        {canManage && (
                           <>
                             <button onClick={() => { setEditando(p); setForm({ razonSocial: p.razonSocial || '', cuit: p.cuit || '', contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', direccion: p.direccion || '' }); setMostrarModal(true); }} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', padding: '0.25rem 0.5rem', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}>Editar</button>
                             <button onClick={async () => { if (window.confirm('¿Eliminar proveedor?')) await deleteMut.mutateAsync(p.id); }} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}>Eliminar</button>

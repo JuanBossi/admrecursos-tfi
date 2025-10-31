@@ -22,6 +22,7 @@ export default function AlertasListPage() {
     mensaje: '',
     equipoId: ''
   });
+  const [formError, setFormError] = useState('');
 
   // Hooks para datos
   const { data: alertasData, isLoading, error } = useAlertasList(filtros);

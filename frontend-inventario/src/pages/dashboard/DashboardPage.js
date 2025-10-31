@@ -1,6 +1,6 @@
 // src/pages/dashboard/DashboardPage.js
-import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
 import { useEstadisticas } from '../../core/hooks/useEstadisticas';
 import { useGarantiasPorVencer } from '../../core/hooks/useEquipos';
 import { useMantenimientosProximos } from '../../core/hooks/useMantenimientos';
@@ -20,18 +20,44 @@ const badgeClassesPorDias = (d) => {
 };
 
 export default function DashboardPage() {
-  const { data: estadisticas, isLoading, error } = useEstadisticas();
+  const location = useLocation();
+  const { data: estadisticas, isLoading, error, refetch: refetchEst } = useEstadisticas();
   const {
     data: garantias,
     isLoading: guarLoading,
     error: guarError,
     dias: ventanaDias,
+    refetch: refetchGarantias,
   } = useGarantiasPorVencer({ dias: 30 });
   const {
     data: proximos,
     isLoading: mantLoading,
     error: mantError,
+    refetch: refetchProximos,
   } = useMantenimientosProximos({ dias: 30 });
+
+  // Forzar refetch al entrar/navegar al Dashboard o al volver el foco
+  useEffect(() => {
+    if (location?.pathname === '/' || location?.pathname === '/dashboard') {
+      try { refetchEst(); } catch {}
+      try { refetchGarantias(); } catch {}
+      try { refetchProximos(); } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.key]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (location?.pathname === '/' || location?.pathname === '/dashboard') {
+        try { refetchEst(); } catch {}
+        try { refetchGarantias(); } catch {}
+        try { refetchProximos(); } catch {}
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.pathname]);
 
   const topCards = useMemo(() => {
     if (!estadisticas) return [];

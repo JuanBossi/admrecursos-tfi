@@ -12,6 +12,8 @@ export enum HistorialAccion {
   REPARADO = 'REPARADO',
   ROTO = 'ROTO',
   BAJA = 'BAJA',
+  ACTIVO = 'ACTIVO',
+  REPARACION = 'REPARACION',
 }
 
 @Entity('historial_cambios')

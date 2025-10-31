@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Area } from '../../../catalogos/area/entities/area.entity';
-// (Cuando crees estos módulos, importa sus entidades reales)
 import { Proveedor } from '../../../catalogos/proveedor/entities/proveedor.entity';
 import { Empleado } from '../../../personas/empleado/entities/empleado.entity';
 

@@ -67,8 +67,6 @@ async function main() {
     proveedores.push(p);
   }
 
-  // Empleados: omitidos en este seed (equipos quedarán sin asignar)
-
   // Equipos
   const equipos: Equipo[] = [];
   for (let i = 1; i <= 15; i++) {

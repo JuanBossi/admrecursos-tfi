@@ -8,6 +8,7 @@ import MantenimientosListPage from './pages/mantenimientos/MantenimientosListPag
 import AlertasListPage from './pages/alertas/AlertasListPage';
 import PerifericosListPage from './pages/perifericos/PerifericosListPage';
 import TecnicosListPage from './pages/tecnicos/TecnicosListPage';
+import HistorialEquipoPage from './pages/historial/HistorialEquipoPage';
 
 import LoginPage from './pages/usuarios/loginpage';
 import { AuthProvider, useAuth } from './core/auth/AuthContext';
@@ -42,6 +43,7 @@ export default function App() {
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/equipos" element={<EquiposListPage />} />
+              <Route path="/equipos/:id/historial" element={<HistorialEquipoPage />} />
               <Route path="/mantenimientos" element={<MantenimientosListPage />} />
               <Route path="/alertas" element={<AlertasListPage />} />
               <Route path="/perifericos" element={<PerifericosListPage />} />
@@ -56,4 +58,3 @@ export default function App() {
     </QueryClientProvider>
   );
 }
-

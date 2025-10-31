@@ -3,20 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Mantenimiento } from './entities/mantenimiento.entity';
 import { CreateMantenimientoDto } from './dto/create-mantenimiento.dto';
-import { UpdateMantenimientoDto } from './dto/update-mantenimiento.dto';
+import { UpdateMantenimientoDto, EstadoMantenimiento } from './dto/update-mantenimiento.dto';
 import { QueryMantenimientoDto } from './dto/query-mantenimiento.dto';
+import { Equipo, EquipoEstado } from '../equipo/entities/equipo.entity';
+import { HistorialCambios, HistorialAccion } from '../historial-cambios/entities/historial-cambios.entity';
 
 @Injectable()
 export class MantenimientoService {
   constructor(
     @InjectRepository(Mantenimiento)
     private readonly mantenimientoRepository: Repository<Mantenimiento>,
+    @InjectRepository(Equipo)
+    private readonly equipoRepository: Repository<Equipo>,
+    @InjectRepository(HistorialCambios)
+    private readonly historialRepository: Repository<HistorialCambios>,
   ) {}
-
-  /*async create(createMantenimientoDto: CreateMantenimientoDto) {
-    const mantenimiento = this.mantenimientoRepository.create(createMantenimientoDto);
-    return await this.mantenimientoRepository.save(mantenimiento);
-  }*/
 
    async create(dto: CreateMantenimientoDto) {
     const mantenimiento = this.mantenimientoRepository.create({
@@ -88,7 +89,7 @@ export class MantenimientoService {
   }
 
   async update(id: string, dto: UpdateMantenimientoDto) {
-    const existente = await this.mantenimientoRepository.findOne({ where: { id: Number(id) } });
+    const existente = await this.mantenimientoRepository.findOne({ where: { id: Number(id) }, relations: ['equipo'] });
     if (!existente) {
       throw new NotFoundException('Mantenimiento no encontrado');
     }
@@ -109,8 +110,54 @@ export class MantenimientoService {
     if (dto.updated_by !== undefined)
       partial.updatedBy = dto.updated_by !== null ? ({ id: String(dto.updated_by) } as any) : null;
 
+    const prevEstado = existente.estado;
     const merged = this.mantenimientoRepository.merge(existente, partial);
     const saved = await this.mantenimientoRepository.save(merged);
+
+    // Side-effects: actualizar estado del equipo y registrar historial
+    if (dto.estado !== undefined && dto.estado !== prevEstado) {
+      const equipoId = String(existente.equipo?.id || '');
+      const userId = dto.updated_by ? String(dto.updated_by) : undefined;
+
+      if (equipoId) {
+        if (dto.estado === EstadoMantenimiento.EN_PROGRESO) {
+          await this.equipoRepository.update({ id: equipoId }, { estado: EquipoEstado.REPARACION } as any);
+          await this.historialRepository.save(this.historialRepository.create({
+            equipo: { id: equipoId } as any,
+            accion: HistorialAccion.REPARACION,
+            usuario: userId ? ({ id: userId } as any) : undefined,
+            motivo: 'Mantenimiento en progreso',
+          }));
+        }
+
+        if (dto.estado === EstadoMantenimiento.COMPLETO) {
+          const result = (dto as any).resultado as ('REPARADO' | 'ROTO' | undefined);
+          if (result === 'ROTO') {
+          } else {
+          
+            await this.equipoRepository.update({ id: equipoId }, { estado: EquipoEstado.ACTIVO } as any);
+            await this.historialRepository.save(this.historialRepository.create({
+              equipo: { id: equipoId } as any,
+              accion: HistorialAccion.REPARADO,
+              usuario: userId ? ({ id: userId } as any) : undefined,
+              motivo: 'Mantenimiento completo - equipo reparado',
+            }));
+          }
+        }
+
+        if (dto.estado === EstadoMantenimiento.CANCELADO) {
+          // En cancelación, devolvemos el equipo a ACTIVO si estaba en reparación
+          await this.equipoRepository.update({ id: equipoId }, { estado: EquipoEstado.ACTIVO } as any);
+          await this.historialRepository.save(this.historialRepository.create({
+            equipo: { id: equipoId } as any,
+            accion: HistorialAccion.ACTIVO,
+            usuario: userId ? ({ id: userId } as any) : undefined,
+            motivo: 'Mantenimiento cancelado',
+          }));
+        }
+      }
+    }
+
     return { ok: true, data: saved };
   }
 

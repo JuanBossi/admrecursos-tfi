@@ -8,10 +8,7 @@ import {
 } from 'class-validator';
 import { TipoMantenimiento } from './create-mantenimiento.dto';
 
-/**
- * DTO para actualizar mantenimiento existente
- * Todos los campos son opcionales.
- */
+
 export enum EstadoMantenimiento {
   PROGRAMADO = 'PROGRAMADO',
   EN_PROGRESO = 'EN PROGRESO',
@@ -51,4 +48,9 @@ export class UpdateMantenimientoDto {
   @IsOptional()
   @IsInt()
   updated_by?: number | null;
+
+  // Resultado del mantenimiento al completar: REPARADO o ROTO
+  @IsOptional()
+  @IsEnum(['REPARADO', 'ROTO'] as const)
+  resultado?: 'REPARADO' | 'ROTO';
 }

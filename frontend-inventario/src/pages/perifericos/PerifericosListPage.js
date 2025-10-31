@@ -16,6 +16,7 @@ export default function PerifericosListPage() {
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const isTecnico = !!user?.roles?.some(r => r?.nombre === 'Tecnico');
   const canAdd = isAdmin || isTecnico;
+  const canManage = canAdd; // Empleado solo lectura
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
@@ -199,11 +200,15 @@ export default function PerifericosListPage() {
                     <td><div style={{ maxWidth: 420, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatEspecificaciones(p.especificaciones)}</div></td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => handleEdit(p)} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Editar</button>
-                        {!p.equipo && (
+                        {canManage && (
+                          <button onClick={() => handleEdit(p)} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Editar</button>
+                        )}
+                        {canManage && !p.equipo && (
                           <button onClick={() => handleEdit(p)} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Asignar</button>
                         )}
-                        <button onClick={() => handleDelete(p)} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Eliminar</button>
+                        {canManage && (
+                          <button onClick={() => handleDelete(p)} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', cursor: 'pointer' }}>Eliminar</button>
+                        )}
                       </div>
                     </td>
                   </tr>

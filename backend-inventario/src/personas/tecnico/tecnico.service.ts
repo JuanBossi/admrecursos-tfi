@@ -31,7 +31,6 @@ export class TecnicoService {
       if (email && dni) {
         let user: Usuario | null = await this.usuarioRepository.findOne({ where: [{ email }, { username: email }] as any, relations: { roles: true } });
 
-        // Asegurar rol Tecnico
         let rolTecnico = await this.rolRepository.findOne({ where: { nombre: 'Tecnico' } });
         if (!rolTecnico) {
           rolTecnico = await this.rolRepository.save(this.rolRepository.create({ nombre: 'Tecnico' }));
@@ -46,15 +45,13 @@ export class TecnicoService {
             activo: 1 as any,
             roles: [rolTecnico],
           } as any) as unknown as Usuario;
-          // Vincular empleado_id al id del tÃ©cnico segÃºn la convenciÃ³n del sistema
-          // vínculo omitido: empleado_id apunta a empleado, no técnico
+          
         } else {
-          // Garantiza rol y estado, y vinculaciÃ³n
+          
           const names = (user.roles || []).map(r => r.nombre);
           if (!names.includes('Tecnico')) user.roles = [...(user.roles || []), rolTecnico];
           user.activo = 1 as any;
-          if (!(user as any).empleado) // vínculo omitido: empleado_id apunta a empleado, no técnico
-          // No sobreescribo password si ya existe; opcionalmente podrÃ­as actualizarlo
+          if (!(user as any).empleado) 
           if (!user.passwordHash) user.passwordHash = passwordHash;
         }
         await this.usuarioRepository.save(user as Usuario);

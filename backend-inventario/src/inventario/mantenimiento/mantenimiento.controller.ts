@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req } from '@nestjs/common';
 import { MantenimientoService } from './mantenimiento.service';
 import { CreateMantenimientoDto } from './dto/create-mantenimiento.dto';
 import { UpdateMantenimientoDto } from './dto/update-mantenimiento.dto';
@@ -11,7 +11,9 @@ export class MantenimientoController {
 
   @Post()
   @Roles('Tecnico', 'Administrador')
-  create(@Body() dto: CreateMantenimientoDto) {
+  create(@Body() dto: CreateMantenimientoDto, @Req() req: any) {
+    const userId = req?.user?.id ? Number(req.user.id) : undefined;
+    if (userId && (dto as any).created_by === undefined) (dto as any).created_by = userId;
     return this.service.create(dto);
   }
 
@@ -33,7 +35,9 @@ export class MantenimientoController {
 
   @Patch(':id')
   @Roles('Tecnico', 'Administrador')
-  update(@Param('id') id: string, @Body() dto: UpdateMantenimientoDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateMantenimientoDto, @Req() req: any) {
+    const userId = req?.user?.id ? Number(req.user.id) : undefined;
+    if (userId && (dto as any).updated_by === undefined) (dto as any).updated_by = userId;
     return this.service.update(id, dto);
   }
 

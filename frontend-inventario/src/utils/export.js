@@ -1,6 +1,3 @@
-// Utilidades simples de exportación sin dependencias externas
-// - Excel: genera un CSV compatible con Excel (UTF-8 con BOM)
-// - PDF: abre una ventana imprimible con la tabla para "Guardar como PDF"
 
 function escapeCsv(value) {
   const v = value == null ? '' : String(value);
@@ -26,7 +23,6 @@ function triggerDownload(blob, filename) {
 function detectCsvDelimiter() {
   try {
     const sample = (1.1).toLocaleString();
-    // Si el separador decimal es coma, Excel suele usar ';' como separador de listas
     return sample.includes(',') ? ';' : ',';
   } catch (_) {
     return ',';
