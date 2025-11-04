@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useAlertasList, useAlertaCreate, useAlertaUpdate, useAlertaDelete } from '../../core/hooks/useAlertas';
 import { useEquiposList } from '../../core/hooks/useEquipos';
@@ -10,11 +10,10 @@ export default function AlertasListPage() {
   const isAdmin = !!user?.roles?.some(r => r?.nombre === 'Administrador');
   const canCreate = isEmpleado || isTecnico || isAdmin;
   const isTecnicoOrAdmin = isTecnico || isAdmin;
-  const [filtros, setFiltros] = useState({
-    search: '',
-    page: 1,
-    limit: 10
-  });
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -25,7 +24,7 @@ export default function AlertasListPage() {
   const [formError, setFormError] = useState('');
 
   // Hooks para datos
-  const { data: alertasData, isLoading, error } = useAlertasList(filtros);
+  const { data: alertasData, isLoading, error } = useAlertasList({ search, page, limit });
   const { data: equiposData } = useEquiposList({ limit: 200 });
   const createMutation = useAlertaCreate();
   const updateMutation = useAlertaUpdate();
@@ -34,16 +33,17 @@ export default function AlertasListPage() {
   const alertas = alertasData?.items || [];
   const equipos = equiposData?.items || [];
   const total = alertasData?.total || 0;
-  const totalPages = Math.ceil(total / filtros.limit);
+  const totalPages = Math.ceil(total / limit);
 
-  // Manejo de filtros
-  const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({
-      ...prev,
-      [campo]: valor,
-      page: 1 // Reset a página 1 cuando cambian filtros
-    }));
-  };
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 2000); // Espera 500ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Manejo de formulario
   const handleInputChange = (campo, valor) => {
@@ -107,10 +107,7 @@ export default function AlertasListPage() {
   };
 
   const handlePaginacion = (nuevaPagina) => {
-    setFiltros(prev => ({
-      ...prev,
-      page: nuevaPagina
-    }));
+    setPage(nuevaPagina);
   };
 
   if (isLoading) {
@@ -173,8 +170,8 @@ export default function AlertasListPage() {
             </label>
             <input
               type="text"
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Mensaje, equipo..."
               style={{
                 width: '100%',
@@ -191,8 +188,11 @@ export default function AlertasListPage() {
               Mostrar por página
             </label>
             <select
-              value={filtros.limit}
-              onChange={(e) => handleFiltroChange('limit', parseInt(e.target.value))}
+              value={limit}
+              onChange={(e) => {
+                setLimit(parseInt(e.target.value));
+                setPage(1);
+              }}
               style={{
                 width: '100%',
                 padding: '0.5rem',
@@ -298,13 +298,13 @@ export default function AlertasListPage() {
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
                 <button
-                  onClick={() => handlePaginacion(filtros.page - 1)}
-                  disabled={filtros.page === 1}
+                  onClick={() => handlePaginacion(page - 1)}
+                  disabled={page === 1}
                   style={{
                     padding: '0.5rem',
                     border: '1px solid #d1d5db',
-                    background: filtros.page === 1 ? '#f9fafb' : 'white',
-                    cursor: filtros.page === 1 ? 'not-allowed' : 'pointer',
+                    background: page === 1 ? '#f9fafb' : 'white',
+                    cursor: page === 1 ? 'not-allowed' : 'pointer',
                     borderRadius: '0.25rem'
                   }}
                 >
@@ -312,17 +312,17 @@ export default function AlertasListPage() {
                 </button>
                 
                 <span style={{ padding: '0 1rem' }}>
-                  Página {filtros.page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
                 
                 <button
-                  onClick={() => handlePaginacion(filtros.page + 1)}
-                  disabled={filtros.page === totalPages}
+                  onClick={() => handlePaginacion(page + 1)}
+                  disabled={page === totalPages}
                   style={{
                     padding: '0.5rem',
                     border: '1px solid #d1d5db',
-                    background: filtros.page === totalPages ? '#f9fafb' : 'white',
-                    cursor: filtros.page === totalPages ? 'not-allowed' : 'pointer',
+                    background: page === totalPages ? '#f9fafb' : 'white',
+                    cursor: page === totalPages ? 'not-allowed' : 'pointer',
                     borderRadius: '0.25rem'
                   }}
                 >
