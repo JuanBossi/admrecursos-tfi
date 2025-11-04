@@ -19,10 +19,37 @@ import { UsuarioModule } from './acceso/usuario/usuario.module';
 import { AuthModule } from './acceso/auth/auth.module';
 import { AuthGuard } from './acceso/auth/guards/auth.guard';
 import { RolesGuard } from './acceso/auth/guards/roles.guard';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+
+
+const isProd = process.env.DB_HOST || process.env.DATABASE_URL;
+
+// Config TypeORM para producción (MySQL externo por TCP)
+const DB_PROD = {
+  type: 'mysql' as const,
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT ?? '3306'),
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  autoLoadEntities: true,
+  // Para demo podés dejar synchronize en true; en prod real: false + migraciones
+  synchronize: process.env.TYPEORM_SYNC === 'true', 
+  logging: ['error', 'warn'] as const,
+  namingStrategy: new SnakeNamingStrategy(),
+   extra: {
+    // SSL requerido por Aiven (mysql2):
+    ssl: {
+      // Para demo suele alcanzar sólo con esto; si Aiven te da un CA, podemos agregar 'ca'
+      rejectUnauthorized: (process.env.DB_SSL_REJECT_UNAUTHORIZED ?? 'true') === 'true',
+      ca: process.env.DB_CA && Buffer.from(process.env.DB_CA, 'base64').toString('utf8'),
+      minVersion: 'TLSv1.2',
+    },
+  },
+};
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot(DB_LOCAL),
+  imports: [TypeOrmModule.forRoot(isProd ? (DB_PROD as any) : DB_LOCAL),
     AreaModule,
     MarcaModule,
     EquipoModule,
